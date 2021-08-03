@@ -1,0 +1,18 @@
+[package]
+name = "nh3"
+version = "0.1.0"
+authors = ["messense <messense@icloud.com>"]
+edition = "2018"
+description = "Ammonia HTML sanitizer Python binding"
+license = "MIT"
+repository = "https://github.com/messense/nh3"
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ammonia = "3.1.2"
+pyo3 = { version = "0.14.1", features = ["abi3-py36", "extension-module"] }
