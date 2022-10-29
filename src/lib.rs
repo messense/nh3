@@ -1,9 +1,34 @@
+use std::collections::{HashMap, HashSet};
+
 use pyo3::prelude::*;
 
 /// Clean HTML with a conservative set of defaults
-#[pyfunction]
-fn clean(py: Python, html: &str) -> String {
-    py.allow_threads(|| ammonia::clean(html))
+#[pyfunction(tags = "None", attributes = "None", strip_comments = "true")]
+fn clean(
+    py: Python,
+    html: &str,
+    tags: Option<HashSet<&str>>,
+    attributes: Option<HashMap<&str, HashSet<&str>>>,
+    strip_comments: bool,
+) -> String {
+    py.allow_threads(|| {
+        if tags.is_some() || attributes.is_some() || !strip_comments {
+            let mut cleaner = ammonia::Builder::default();
+            if let Some(tags) = tags {
+                cleaner.tags(tags);
+            }
+            if let Some(mut attrs) = attributes {
+                if let Some(generic_attrs) = attrs.remove("*") {
+                    cleaner.generic_attributes(generic_attrs);
+                }
+                cleaner.tag_attributes(attrs);
+            }
+            cleaner.strip_comments(strip_comments);
+            cleaner.clean(html).to_string()
+        } else {
+            ammonia::clean(html)
+        }
+    })
 }
 
 /// Turn an arbitrary string into unformatted HTML
@@ -22,5 +47,9 @@ fn nh3(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_function(wrap_pyfunction!(clean, m)?)?;
     m.add_function(wrap_pyfunction!(clean_text, m)?)?;
+
+    let a = ammonia::Builder::default();
+    m.add("ALLOWED_TAGS", a.clone_tags())?;
+    m.add("ALLOWED_ATTRIBUTES", a.clone_tag_attributes())?;
     Ok(())
 }
