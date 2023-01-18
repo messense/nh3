@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use pyo3::prelude::*;
 
 /// Clean HTML with a conservative set of defaults
-#[pyfunction(tags = "None", attributes = "None", strip_comments = "true")]
+#[pyfunction(signature = (html, tags = None, attributes = None, strip_comments = true))]
 fn clean(
     py: Python,
     html: &str,
