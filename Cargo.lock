@@ -161,7 +161,7 @@ checksum = "e4a24736216ec316047a1fc4252e27dabb04218aa4a3f37c6e7ddbf1f9782b54"
 
 [[package]]
 name = "nh3"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "ammonia",
  "pyo3",
