@@ -3,16 +3,27 @@ use std::collections::{HashMap, HashSet};
 use pyo3::prelude::*;
 
 /// Clean HTML with a conservative set of defaults
-#[pyfunction(signature = (html, tags = None, attributes = None, strip_comments = true))]
+#[pyfunction(signature = (
+    html,
+    tags = None,
+    attributes = None,
+    strip_comments = true,
+    link_rel = "noopener noreferrer",
+))]
 fn clean(
     py: Python,
     html: &str,
     tags: Option<HashSet<&str>>,
     attributes: Option<HashMap<&str, HashSet<&str>>>,
     strip_comments: bool,
+    link_rel: Option<&str>,
 ) -> String {
     py.allow_threads(|| {
-        if tags.is_some() || attributes.is_some() || !strip_comments {
+        if tags.is_some()
+            || attributes.is_some()
+            || !strip_comments
+            || link_rel != Some("noopener noreferrer")
+        {
             let mut cleaner = ammonia::Builder::default();
             if let Some(tags) = tags {
                 cleaner.tags(tags);
@@ -24,6 +35,7 @@ fn clean(
                 cleaner.tag_attributes(attrs);
             }
             cleaner.strip_comments(strip_comments);
+            cleaner.link_rel(link_rel);
             cleaner.clean(html).to_string()
         } else {
             ammonia::clean(html)
