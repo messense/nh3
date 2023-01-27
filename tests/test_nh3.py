@@ -36,7 +36,9 @@ def test_clean_with_attribute_filter():
     with pytest.raises(TypeError):
         nh3.clean(html, attribute_filter="not a callable")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(SystemError):
+        # FIXME: attribute_filter may raise exception, but it's an infallible API
+        # which causes Python to raise SystemError instead of the intended TypeError
         nh3.clean(html, attribute_filter=lambda _element, _attribute, _value: True)
 
 

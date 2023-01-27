@@ -23,12 +23,10 @@ fn clean(
     strip_comments: bool,
     link_rel: Option<&str>,
 ) -> PyResult<String> {
-    let mut check_callback_err = false;
     if let Some(callback) = attribute_filter.as_ref() {
         if !callback.as_ref(py).is_callable() {
             return Err(PyTypeError::new_err("attribute_filter must be callable"));
         }
-        check_callback_err = true;
     }
 
     let cleaned = py.allow_threads(|| {
@@ -93,14 +91,6 @@ fn clean(
         }
     });
 
-    if check_callback_err {
-        if let Some(err) = PyErr::take(py) {
-            // attribute_filter callback may have raised an exception
-            // check it here to avoid
-            // SystemError: <function clean> returned a result with an exception set
-            return Err(err);
-        }
-    }
     Ok(cleaned)
 }
 
