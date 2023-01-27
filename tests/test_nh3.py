@@ -1,4 +1,5 @@
 import nh3
+import pytest
 
 
 def test_clean():
@@ -17,6 +18,26 @@ def test_clean():
         nh3.clean('<a href="https://baidu.com">baidu</a>', link_rel=None)
         == '<a href="https://baidu.com">baidu</a>'
     )
+
+
+def test_clean_with_attribute_filter():
+    html = "<a href=/><img alt=Home src=foo></a>"
+
+    def attribute_filter(element, attribute, value):
+        if element == "img" and attribute == "src":
+            return None
+        return value
+
+    assert (
+        nh3.clean(html, attribute_filter=attribute_filter, link_rel=None)
+        == '<a href="/"><img alt="Home"></a>'
+    )
+
+    with pytest.raises(TypeError):
+        nh3.clean(html, attribute_filter="not a callable")
+
+    with pytest.raises(TypeError):
+        nh3.clean(html, attribute_filter=lambda _element, _attribute, _value: True)
 
 
 def test_clean_text():
