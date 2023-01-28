@@ -155,7 +155,7 @@ fn is_html(py: Python, html: &str) -> bool {
     py.allow_threads(|| ammonia::is_html(html))
 }
 
-/// Python binding to the ammonia HTML sanitizer crate
+/// Python binding to the `ammonia <https://github.com/rust-ammonia/ammonia>`_ HTML sanitizer Rust crate.
 #[pymodule]
 fn nh3(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
