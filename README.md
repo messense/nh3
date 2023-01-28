@@ -2,6 +2,7 @@
 
 ![CI](https://github.com/messense/nh3/workflows/CI/badge.svg)
 [![PyPI](https://img.shields.io/pypi/v/nh3.svg)](https://pypi.org/project/nh3)
+[![Documentation Status](https://readthedocs.org/projects/nh3/badge/?version=latest)](https://nh3.readthedocs.io/en/latest/?badge=latest)
 
 [ammonia](https://github.com/rust-ammonia/ammonia) Python binding.
 
