@@ -21,7 +21,7 @@ use pyo3::types::{PyString, PyTuple};
 ///     Returns ``None`` to remove the attribute, or a value to use.
 /// :type attribute_filter: ``Callable[[str, str, str], str]``, optional
 /// :param strip_comments: Configures the handling of HTML comments, defaults to ``True``.
-/// :param strip_comments: ``bool``
+/// :type strip_comments: ``bool``
 /// :param link_rel: Configures a ``rel`` attribute that will be added on links, defaults to ``noopener noreferrer``.
 ///     To turn on rel-insertion, pass a space-separated list.
 ///     If ``rel`` is in the generic or tag attributes, this must be set to ``None``. Common ``rel`` values to include:
