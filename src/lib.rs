@@ -110,12 +110,24 @@ fn clean_text(py: Python, html: &str) -> String {
     py.allow_threads(|| ammonia::clean_text(html))
 }
 
+/// Determine if a given string contains HTML
+///
+/// This function is parses the full string into HTML and checks if the input contained any HTML syntax.
+///
+/// Note: This function will return positively for strings that contain invalid HTML syntax
+/// like `<g>` and even `Vec::<u8>::new()`.
+#[pyfunction]
+fn is_html(py: Python, html: &str) -> bool {
+    py.allow_threads(|| ammonia::is_html(html))
+}
+
 /// Python binding to the ammonia HTML sanitizer crate
 #[pymodule]
 fn nh3(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_function(wrap_pyfunction!(clean, m)?)?;
     m.add_function(wrap_pyfunction!(clean_text, m)?)?;
+    m.add_function(wrap_pyfunction!(is_html, m)?)?;
 
     let a = ammonia::Builder::default();
     m.add("ALLOWED_TAGS", a.clone_tags())?;

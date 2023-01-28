@@ -52,3 +52,8 @@ def test_clean_with_attribute_filter():
 def test_clean_text():
     res = nh3.clean_text('Robert"); abuse();//')
     assert res == "Robert&quot;);&#32;abuse();&#47;&#47;"
+
+
+def test_is_html():
+    assert not nh3.is_html('plain text')
+    assert nh3.is_html('<p>html!</p>')
