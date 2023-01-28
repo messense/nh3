@@ -18,6 +18,13 @@ def test_clean():
         nh3.clean('<a href="https://baidu.com">baidu</a>', link_rel=None)
         == '<a href="https://baidu.com">baidu</a>'
     )
+    assert (
+        nh3.clean(
+            "<script>alert('hello')</script><style>a { background: #fff }</style>",
+            clean_content_tags={"script", "style"},
+        )
+        == ""
+    )
 
 
 def test_clean_with_attribute_filter():

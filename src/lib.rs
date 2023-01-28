@@ -9,6 +9,7 @@ use pyo3::types::{PyString, PyTuple};
 #[pyfunction(signature = (
     html,
     tags = None,
+    clean_content_tags = None,
     attributes = None,
     attribute_filter = None,
     strip_comments = true,
@@ -18,6 +19,7 @@ fn clean(
     py: Python,
     html: &str,
     tags: Option<HashSet<&str>>,
+    clean_content_tags: Option<HashSet<&str>>,
     attributes: Option<HashMap<&str, HashSet<&str>>>,
     attribute_filter: Option<PyObject>,
     strip_comments: bool,
@@ -31,6 +33,7 @@ fn clean(
 
     let cleaned = py.allow_threads(|| {
         if tags.is_some()
+            || clean_content_tags.is_some()
             || attributes.is_some()
             || attribute_filter.is_some()
             || !strip_comments
@@ -39,6 +42,9 @@ fn clean(
             let mut cleaner = ammonia::Builder::default();
             if let Some(tags) = tags {
                 cleaner.tags(tags);
+            }
+            if let Some(tags) = clean_content_tags {
+                cleaner.clean_content_tags(tags);
             }
             if let Some(mut attrs) = attributes {
                 if let Some(generic_attrs) = attrs.remove("*") {
