@@ -19,7 +19,7 @@ use pyo3::types::{PyString, PyTuple};
 /// :param attribute_filter: Allows rewriting of all attributes using a callback.
 ///     The callback takes name of the element, attribute and its value.
 ///     Returns ``None`` to remove the attribute, or a value to use.
-/// :type attribute_filter: ``Callable[[str, str, str], str]``, optional
+/// :type attribute_filter: ``Callable[[str, str, str], str | None]``, optional
 /// :param strip_comments: Configures the handling of HTML comments, defaults to ``True``.
 /// :type strip_comments: ``bool``
 /// :param link_rel: Configures a ``rel`` attribute that will be added on links, defaults to ``noopener noreferrer``.
