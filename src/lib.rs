@@ -5,7 +5,33 @@ use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyString, PyTuple};
 
-/// Clean HTML with a conservative set of defaults
+/// Sanitizes an HTML fragment in a string according to the configured options.
+///
+/// :param html: Input HTML fragment
+/// :type html: ``str``
+/// :param tags: Sets the tags that are allowed.
+/// :type tags: ``set[str]``, optional
+/// :param clean_content_tags: Sets the tags whose contents will be completely removed from the output.
+/// :type clean_content_tags: ``set[str]``, optional
+/// :param attributes: Sets the HTML attributes that are allowed on specific tags,
+///    ``*`` key means the attributes are allowed on any tag.
+/// :type attributes: ``dict[str, set[str]]``, optional
+/// :param attribute_filter: Allows rewriting of all attributes using a callback.
+///     The callback takes name of the element, attribute and its value.
+///     Returns ``None`` to remove the attribute, or a value to use.
+/// :type attribute_filter: ``Callable[[str, str, str], str]``, optional
+/// :param strip_comments: Configures the handling of HTML comments, defaults to ``True``.
+/// :param strip_comments: ``bool``
+/// :param link_rel: Configures a ``rel`` attribute that will be added on links, defaults to ``noopener noreferrer``.
+///     To turn on rel-insertion, pass a space-separated list.
+///     If ``rel`` is in the generic or tag attributes, this must be set to ``None``. Common ``rel`` values to include:
+///
+///     - ``noopener``: This prevents a particular type of XSS attack, and should usually be turned on for untrusted HTML.
+///     - ``noreferrer``: This prevents the browser from sending the source URL to the website that is linked to.
+///     - ``nofollow``: This prevents search engines from using this link for ranking, which disincentivizes spammers.
+/// :type link_rel: ``str``
+/// :return: Sanitized HTML fragment
+/// :rtype: ``str``
 #[pyfunction(signature = (
     html,
     tags = None,
@@ -104,7 +130,11 @@ fn clean(
 ///
 /// This function is roughly equivalent to PHP’s htmlspecialchars and htmlentities.
 /// It is as strict as possible, encoding every character that has special meaning to the HTML parser.
-
+///
+/// :param html: Input HTML fragment
+/// :type html: ``str``
+/// :return: Cleaned text
+/// :rtype: ``str``
 #[pyfunction]
 fn clean_text(py: Python, html: &str) -> String {
     py.allow_threads(|| ammonia::clean_text(html))
@@ -115,7 +145,11 @@ fn clean_text(py: Python, html: &str) -> String {
 /// This function is parses the full string into HTML and checks if the input contained any HTML syntax.
 ///
 /// Note: This function will return positively for strings that contain invalid HTML syntax
-/// like `<g>` and even `Vec::<u8>::new()`.
+/// like ``<g>`` and even ``Vec::<u8>::new()``.
+///
+/// :param html: Input string
+/// :type html: ``str``
+/// :rtype: ``bool``
 #[pyfunction]
 fn is_html(py: Python, html: &str) -> bool {
     py.allow_threads(|| ammonia::is_html(html))
