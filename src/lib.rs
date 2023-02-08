@@ -110,7 +110,17 @@ fn clean(
                             }
                             Err(err) => err,
                         };
-                        err.restore(py);
+                        err.write_unraisable(
+                            py,
+                            Some(PyTuple::new(
+                                py,
+                                [
+                                    PyString::new(py, element),
+                                    PyString::new(py, attribute),
+                                    PyString::new(py, value),
+                                ],
+                            )),
+                        );
                         Some(value.into())
                     })
                 });
