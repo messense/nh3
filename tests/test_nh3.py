@@ -26,6 +26,11 @@ def test_clean():
         == ""
     )
 
+    assert (
+        nh3.clean('<div data-v="foo"></div>', generic_attribute_prefixes={"data-"})
+        == '<div data-v="foo"></div>'
+    )
+
 
 def test_clean_with_attribute_filter():
     html = "<a href=/><img alt=Home src=foo></a>"
@@ -54,5 +59,5 @@ def test_clean_text():
 
 
 def test_is_html():
-    assert not nh3.is_html('plain text')
-    assert nh3.is_html('<p>html!</p>')
+    assert not nh3.is_html("plain text")
+    assert nh3.is_html("<p>html!</p>")

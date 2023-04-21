@@ -30,6 +30,8 @@ use pyo3::types::{PyString, PyTuple};
 ///     - ``noreferrer``: This prevents the browser from sending the source URL to the website that is linked to.
 ///     - ``nofollow``: This prevents search engines from using this link for ranking, which disincentivizes spammers.
 /// :type link_rel: ``str``
+/// :param generic_attribute_prefixes: Sets the prefix of attributes that are allowed on any tag.
+/// :type generic_attribute_prefixes: ``set[str]``, optional
 /// :return: Sanitized HTML fragment
 /// :rtype: ``str``
 #[pyfunction(signature = (
@@ -40,6 +42,7 @@ use pyo3::types::{PyString, PyTuple};
     attribute_filter = None,
     strip_comments = true,
     link_rel = "noopener noreferrer",
+    generic_attribute_prefixes = None,
 ))]
 fn clean(
     py: Python,
@@ -50,6 +53,7 @@ fn clean(
     attribute_filter: Option<PyObject>,
     strip_comments: bool,
     link_rel: Option<&str>,
+    generic_attribute_prefixes: Option<HashSet<&str>>,
 ) -> PyResult<String> {
     if let Some(callback) = attribute_filter.as_ref() {
         if !callback.as_ref(py).is_callable() {
@@ -64,6 +68,7 @@ fn clean(
             || attribute_filter.is_some()
             || !strip_comments
             || link_rel != Some("noopener noreferrer")
+            || generic_attribute_prefixes.is_some()
         {
             let mut cleaner = ammonia::Builder::default();
             if let Some(tags) = tags {
@@ -77,6 +82,9 @@ fn clean(
                     cleaner.generic_attributes(generic_attrs);
                 }
                 cleaner.tag_attributes(attrs);
+            }
+            if let Some(prefixes) = generic_attribute_prefixes {
+                cleaner.generic_attribute_prefixes(prefixes);
             }
             if let Some(callback) = attribute_filter {
                 cleaner.attribute_filter(move |element, attribute, value| {
