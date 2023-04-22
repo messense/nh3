@@ -1,6 +1,6 @@
 [package]
 name = "nh3"
-version = "0.2.10"
+version = "0.2.11"
 authors = ["messense <messense@icloud.com>"]
 edition = "2018"
 description = "Ammonia HTML sanitizer Python binding"
