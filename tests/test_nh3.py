@@ -40,6 +40,15 @@ def test_clean():
         == '<my-tag my-attr="val"></my-tag>'
     )
 
+    assert (
+        nh3.clean(
+            "<my-tag>",
+            tags={"my-tag"},
+            set_tag_attribute_values={"my-tag": {"my-attr": "val"}},
+        )
+        == '<my-tag my-attr="val"></my-tag>'
+    )
+
 
 def test_clean_with_attribute_filter():
     html = "<a href=/><img alt=Home src=foo></a>"

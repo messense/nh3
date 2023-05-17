@@ -36,6 +36,10 @@ use pyo3::types::{PyString, PyTuple};
 ///     The value is structured as a map from tag names to a map from attribute names to a set of attribute values.
 ///     If a tag is not itself whitelisted, adding entries to this map will do nothing.
 /// :type tag_attribute_values: ``dict[str, dict[str, set[str]]]``, optional
+/// :param set_tag_attribute_values: Sets the values of HTML attributes that are to be set on specific tags.
+///     The value is structured as a map from tag names to a map from attribute names to an attribute value.
+///     If a tag is not itself whitelisted, adding entries to this map will do nothing.
+/// :type set_tag_attribute_values: ``dict[str, dict[str, str]]``, optional
 /// :return: Sanitized HTML fragment
 /// :rtype: ``str``
 #[pyfunction(signature = (
@@ -48,6 +52,7 @@ use pyo3::types::{PyString, PyTuple};
     link_rel = "noopener noreferrer",
     generic_attribute_prefixes = None,
     tag_attribute_values = None,
+    set_tag_attribute_values = None,
 ))]
 fn clean(
     py: Python,
@@ -60,6 +65,7 @@ fn clean(
     link_rel: Option<&str>,
     generic_attribute_prefixes: Option<HashSet<&str>>,
     tag_attribute_values: Option<HashMap<&str, HashMap<&str, HashSet<&str>>>>,
+    set_tag_attribute_values: Option<HashMap<&str, HashMap<&str, &str>>>,
 ) -> PyResult<String> {
     if let Some(callback) = attribute_filter.as_ref() {
         if !callback.as_ref(py).is_callable() {
@@ -76,6 +82,7 @@ fn clean(
             || link_rel != Some("noopener noreferrer")
             || generic_attribute_prefixes.is_some()
             || tag_attribute_values.is_some()
+            || set_tag_attribute_values.is_some()
         {
             let mut cleaner = ammonia::Builder::default();
             if let Some(tags) = tags {
@@ -95,6 +102,9 @@ fn clean(
             }
             if let Some(values) = tag_attribute_values {
                 cleaner.tag_attribute_values(values);
+            }
+            if let Some(values) = set_tag_attribute_values {
+                cleaner.set_tag_attribute_values(values);
             }
             if let Some(callback) = attribute_filter {
                 cleaner.attribute_filter(move |element, attribute, value| {
