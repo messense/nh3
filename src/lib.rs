@@ -40,6 +40,8 @@ use pyo3::types::{PyString, PyTuple};
 ///     The value is structured as a map from tag names to a map from attribute names to an attribute value.
 ///     If a tag is not itself whitelisted, adding entries to this map will do nothing.
 /// :type set_tag_attribute_values: ``dict[str, dict[str, str]]``, optional
+/// :param url_schemes: Sets the URL schemes permitted on `href` and `src` attributes.
+/// :type url_schemes: ``set[str]``, optional
 /// :return: Sanitized HTML fragment
 /// :rtype: ``str``
 #[pyfunction(signature = (
@@ -53,6 +55,7 @@ use pyo3::types::{PyString, PyTuple};
     generic_attribute_prefixes = None,
     tag_attribute_values = None,
     set_tag_attribute_values = None,
+    url_schemes = None,
 ))]
 fn clean(
     py: Python,
@@ -66,6 +69,7 @@ fn clean(
     generic_attribute_prefixes: Option<HashSet<&str>>,
     tag_attribute_values: Option<HashMap<&str, HashMap<&str, HashSet<&str>>>>,
     set_tag_attribute_values: Option<HashMap<&str, HashMap<&str, &str>>>,
+    url_schemes: Option<HashSet<&str>>,
 ) -> PyResult<String> {
     if let Some(callback) = attribute_filter.as_ref() {
         if !callback.as_ref(py).is_callable() {
@@ -83,6 +87,7 @@ fn clean(
             || generic_attribute_prefixes.is_some()
             || tag_attribute_values.is_some()
             || set_tag_attribute_values.is_some()
+            || url_schemes.is_some()
         {
             let mut cleaner = ammonia::Builder::default();
             if let Some(tags) = tags {
@@ -155,6 +160,9 @@ fn clean(
             }
             cleaner.strip_comments(strip_comments);
             cleaner.link_rel(link_rel);
+            if let Some(url_schemes) = url_schemes {
+                cleaner.url_schemes(url_schemes);
+            }
             cleaner.clean(html).to_string()
         } else {
             ammonia::clean(html)
