@@ -61,7 +61,6 @@ jobs:
         with:
           target: ${{ matrix.target }}
           args: --release --out dist
-          sccache: true
       - name: Install built wheel
         run: |
           pip install nh3 --no-index --find-links dist --force-reinstall
