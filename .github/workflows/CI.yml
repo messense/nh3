@@ -22,6 +22,7 @@ jobs:
         with:
           target: x86_64
           args: --release --out dist --sdist
+          sccache: true
       - name: Install built wheel - x86_64
         run: |
           pip install nh3 --no-index --find-links dist --force-reinstall
@@ -32,6 +33,7 @@ jobs:
         with:
           target: universal2-apple-darwin
           args: --release --out dist
+          sccache: true
       - name: Install built wheel - universal2
         run: |
           pip install nh3 --no-index --find-links dist --force-reinstall
@@ -59,6 +61,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           args: --release --out dist
+          sccache: true
       - name: Install built wheel
         run: |
           pip install nh3 --no-index --find-links dist --force-reinstall
@@ -88,6 +91,7 @@ jobs:
         target: ${{ matrix.target }}
         manylinux: auto
         args: --release --out dist
+        sccache: true
     - name: Install built wheel
       if: matrix.target == 'x86_64'
       run: |
@@ -117,6 +121,7 @@ jobs:
         target: ${{ matrix.target }}
         manylinux: auto
         args: --release --out dist
+        sccache: true
     - uses: uraimo/run-on-arch-action@v2.3.0
       if: matrix.target != 'ppc64'
       name: Install built wheel
@@ -156,6 +161,7 @@ jobs:
         target: ${{ matrix.target }}
         manylinux: musllinux_1_2
         args: --release --out dist
+        sccache: true
     - name: Install built wheel
       if: matrix.target == 'x86_64-unknown-linux-musl'
       uses: addnab/docker-run-action@v3
@@ -193,6 +199,7 @@ jobs:
         target: ${{ matrix.platform.target }}
         manylinux: musllinux_1_2
         args: --release --out dist
+        sccache: true
     - uses: uraimo/run-on-arch-action@v2.3.0
       name: Install built wheel
       with:
