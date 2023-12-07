@@ -5,7 +5,7 @@ use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyString, PyTuple};
 
-/// Sanitizes an HTML fragment in a string according to the configured options.
+/// Sanitize an HTML fragment according to the given options.
 ///
 /// :param html: Input HTML fragment
 /// :type html: ``str``
@@ -172,7 +172,7 @@ fn clean(
     Ok(cleaned)
 }
 
-/// Turn an arbitrary string into unformatted HTML
+/// Turn an arbitrary string into unformatted HTML.
 ///
 /// This function is roughly equivalent to PHP’s htmlspecialchars and htmlentities.
 /// It is as strict as possible, encoding every character that has special meaning to the HTML parser.
@@ -186,11 +186,11 @@ fn clean_text(py: Python, html: &str) -> String {
     py.allow_threads(|| ammonia::clean_text(html))
 }
 
-/// Determine if a given string contains HTML
+/// Determine if a given string contains HTML.
 ///
-/// This function is parses the full string into HTML and checks if the input contained any HTML syntax.
+/// This function parses the full string and checks for any HTML syntax.
 ///
-/// Note: This function will return positively for strings that contain invalid HTML syntax
+/// Note: This function will return True for strings that contain invalid HTML syntax
 /// like ``<g>`` and even ``Vec::<u8>::new()``.
 ///
 /// :param html: Input string

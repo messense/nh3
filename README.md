@@ -14,17 +14,14 @@ pip install nh3
 
 ## Usage
 
-```python
-import nh3
-
-print(nh3.clean("<b><img src=\"\">I'm not trying to XSS you</b>"))
-```
+See [the documentation](https://nh3.readthedocs.io/en/latest/).
 
 ## Performance
 
-Running on MacBook Air (M2, 2022)
+A quick benchmark showing that nh3 is about 20 times faster than the deprecated [bleach](https://pypi.org/project/bleach/) package.
+Measured on a MacBook Air (M2, 2022).
 
-```python
+```ipython
 Python 3.11.0 (main, Oct 25 2022, 16:25:24) [Clang 14.0.0 (clang-1400.0.29.102)]
 Type 'copyright', 'credits' or 'license' for more information
 IPython 8.9.0 -- An enhanced Interactive Python. Type '?' for help.
