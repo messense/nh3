@@ -40,10 +40,20 @@ use pyo3::types::{PyString, PyTuple};
 ///     The value is structured as a map from tag names to a map from attribute names to an attribute value.
 ///     If a tag is not itself whitelisted, adding entries to this map will do nothing.
 /// :type set_tag_attribute_values: ``dict[str, dict[str, str]]``, optional
-/// :param url_schemes: Sets the URL schemes permitted on `href` and `src` attributes.
+/// :param url_schemes: Sets the URL schemes permitted on ``href`` and ``src`` attributes.
 /// :type url_schemes: ``set[str]``, optional
 /// :return: Sanitized HTML fragment
 /// :rtype: ``str``
+///
+/// For example:
+///
+/// .. code-block:: pycon
+///
+///     >>> import nh3
+///     >>> nh3.clean("<unknown>hi")
+///     'hi'
+///     >>> nh3.clean("<b><img src='' onerror='alert(\\'hax\\')'>XSS?</b>")
+///     '<b><img src="">XSS?</b>'
 #[pyfunction(signature = (
     html,
     tags = None,
@@ -174,13 +184,21 @@ fn clean(
 
 /// Turn an arbitrary string into unformatted HTML.
 ///
-/// This function is roughly equivalent to PHP’s htmlspecialchars and htmlentities.
-/// It is as strict as possible, encoding every character that has special meaning to the HTML parser.
+/// Roughly equivalent to Python’s html.escape() or PHP’s htmlspecialchars and
+/// htmlentities. Escaping is as strict as possible, encoding every character
+/// that has special meaning to the HTML parser.
 ///
 /// :param html: Input HTML fragment
 /// :type html: ``str``
 /// :return: Cleaned text
 /// :rtype: ``str``
+///
+/// For example:
+///
+/// .. code-block:: pycon
+///
+///      >>> nh3.clean_text('Robert"); abuse();//')
+///      'Robert&quot;);&#32;abuse();&#47;&#47;'
 #[pyfunction]
 fn clean_text(py: Python, html: &str) -> String {
     py.allow_threads(|| ammonia::clean_text(html))
@@ -196,12 +214,21 @@ fn clean_text(py: Python, html: &str) -> String {
 /// :param html: Input string
 /// :type html: ``str``
 /// :rtype: ``bool``
+///
+/// For example:
+///
+/// .. code-block:: pycon
+///
+///     >>> nh3.is_html("plain text")
+///     False
+///     >>> nh3.is_html("<p>html!</p>")
+///     True
 #[pyfunction]
 fn is_html(py: Python, html: &str) -> bool {
     py.allow_threads(|| ammonia::is_html(html))
 }
 
-/// Python binding to the `ammonia <https://github.com/rust-ammonia/ammonia>`_ HTML sanitizer Rust crate.
+/// Python bindings to the ammonia HTML sanitization library ( https://github.com/rust-ammonia/ammonia ).
 #[pymodule]
 fn nh3(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;

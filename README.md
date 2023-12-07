@@ -4,7 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/v/nh3.svg)](https://pypi.org/project/nh3)
 [![Documentation Status](https://readthedocs.org/projects/nh3/badge/?version=latest)](https://nh3.readthedocs.io/en/latest/?badge=latest)
 
-[ammonia](https://github.com/rust-ammonia/ammonia) Python binding.
+Python bindings to the [ammonia](https://github.com/rust-ammonia/ammonia) HTML sanitization library.
 
 ## Installation
 
