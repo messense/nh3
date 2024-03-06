@@ -52,6 +52,10 @@ exclude_patterns = [
 # a list of builtin themes.
 #
 html_theme = 'shibuya'
+html_theme_options = {
+    'page_layout': 'compact',
+    'github_url': 'https://github.com/messense/nh3',
+}
 
 pygments_style = "xcode"
 pygments_dark_style = "monokai"
