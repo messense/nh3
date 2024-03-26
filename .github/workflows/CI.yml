@@ -168,9 +168,11 @@ jobs:
         image: alpine:latest
         options: -v ${{ github.workspace }}:/io -w /io
         run: |
-          apk add py3-pip
-          pip3 install -U pip pytest
-          pip3 install nh3 --no-index --find-links /io/dist/ --force-reinstall
+          apk add py3-virtualenv
+          python3 -m virtualenv .venv
+          source .venv/bin/activate
+          pip install -U pip pytest
+          pip install nh3 --no-index --find-links /io/dist/ --force-reinstall
           cd tests && python3 -m pytest
     - name: Upload wheels
       uses: actions/upload-artifact@v3
@@ -206,10 +208,12 @@ jobs:
         distro: alpine_latest
         githubToken: ${{ github.token }}
         install: |
-          apk add py3-pip
-          pip3 install -U pip pytest
+          apk add py3-virtualenv
         run: |
-          pip3 install nh3 --no-index --find-links dist/ --force-reinstall
+          python3 -m virtualenv .venv
+          source .venv/bin/activate
+          pip install pytest
+          pip install nh3 --no-index --find-links dist/ --force-reinstall
           cd tests && python3 -m pytest
     - name: Upload wheels
       uses: actions/upload-artifact@v3
