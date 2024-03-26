@@ -15,4 +15,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 ammonia = "4.0.0"
-pyo3 = { version = "0.20.2", features = ["abi3-py37", "extension-module"] }
+pyo3 = { version = "0.21.0", features = ["abi3-py37", "gil-refs"] }

@@ -125,14 +125,14 @@ fn clean(
             if let Some(callback) = attribute_filter {
                 cleaner.attribute_filter(move |element, attribute, value| {
                     Python::with_gil(|py| {
-                        let res = callback.call(
+                        let res = callback.call_bound(
                             py,
-                            PyTuple::new(
+                            PyTuple::new_bound(
                                 py,
                                 [
-                                    PyString::new(py, element),
-                                    PyString::new(py, attribute),
-                                    PyString::new(py, value),
+                                    PyString::new_bound(py, element),
+                                    PyString::new_bound(py, attribute),
+                                    PyString::new_bound(py, value),
                                 ],
                             ),
                             None,
@@ -154,14 +154,14 @@ fn clean(
                             }
                             Err(err) => err,
                         };
-                        err.write_unraisable(
+                        err.write_unraisable_bound(
                             py,
-                            Some(PyTuple::new(
+                            Some(&PyTuple::new_bound(
                                 py,
                                 [
-                                    PyString::new(py, element),
-                                    PyString::new(py, attribute),
-                                    PyString::new(py, value),
+                                    PyString::new_bound(py, element),
+                                    PyString::new_bound(py, attribute),
+                                    PyString::new_bound(py, value),
                                 ],
                             )),
                         );
@@ -231,7 +231,7 @@ fn is_html(py: Python, html: &str) -> bool {
 
 /// Python bindings to the ammonia HTML sanitization library ( https://github.com/rust-ammonia/ammonia ).
 #[pymodule]
-fn nh3(_py: Python, m: &PyModule) -> PyResult<()> {
+fn nh3(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_function(wrap_pyfunction!(clean, m)?)?;
     m.add_function(wrap_pyfunction!(clean_text, m)?)?;
