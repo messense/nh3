@@ -1,8 +1,8 @@
 [package]
 name = "nh3"
-version = "0.2.15"
+version = "0.2.16"
 authors = ["messense <messense@icloud.com>"]
-edition = "2018"
+edition = "2021"
 description = "Python bindings to the ammonia HTML sanitization library."
 license = "MIT"
 repository = "https://github.com/messense/nh3"

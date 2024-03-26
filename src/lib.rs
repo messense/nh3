@@ -67,6 +67,7 @@ use pyo3::types::{PyString, PyTuple};
     set_tag_attribute_values = None,
     url_schemes = None,
 ))]
+#[allow(clippy::too_many_arguments)]
 fn clean(
     py: Python,
     html: &str,
