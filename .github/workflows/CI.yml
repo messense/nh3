@@ -32,6 +32,7 @@ jobs:
       - name: Install built wheel - universal2
         run: |
           pip install nh3 --no-index --find-links dist --force-reinstall
+          pip install pytest
           cd tests && pytest
       - name: Upload wheels
         uses: actions/upload-artifact@v3
