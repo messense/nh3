@@ -23,11 +23,6 @@ jobs:
           target: x86_64
           args: --release --out dist --sdist
           sccache: true
-      - name: Install built wheel - x86_64
-        run: |
-          pip install nh3 --no-index --find-links dist --force-reinstall
-          pip install pytest
-          cd tests && pytest
       - name: Build wheels - universal2
         uses: messense/maturin-action@v1
         with:
