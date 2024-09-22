@@ -60,3 +60,14 @@ API reference
        >>> attributes["img"].add("data-invert")
        >>> nh3.clean("<img src='example.jpeg' data-invert=true>", attributes=attributes)
        '<img src="example.jpeg" data-invert="true">'
+
+.. attribute:: ALLOWED_URL_SCHEMES
+
+   The default set of URL schemes permitted on ``href`` and ``src`` attributes.
+   Useful for customizing the default to add or remove some URL schemes:
+
+   .. code-block:: pycon
+
+       >>> url_schemes = nh3.ALLOWED_URL_SCHEMES - {'tel'}
+       >>> nh3.clean('<a href="tel:+1">Call</a> or <a href="mailto:contact@me">email</a> me.', url_schemes=url_schemes)
+       '<a rel="noopener noreferrer">Call</a> or <a href="mailto:contact@me" rel="noopener noreferrer">email</a> me.'
