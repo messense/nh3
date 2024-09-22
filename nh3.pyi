@@ -2,6 +2,7 @@ from typing import Callable, Dict, Optional, Set
 
 ALLOWED_TAGS: Set[str]
 ALLOWED_ATTRIBUTES: Dict[str, Set[str]]
+ALLOWED_URL_SCHEMES: Set[str]
 
 def clean(
     html: str,
