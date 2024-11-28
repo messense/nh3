@@ -71,19 +71,19 @@ use pyo3::types::{PyString, PyTuple};
 fn clean(
     py: Python,
     html: &str,
-    tags: Option<HashSet<&str>>,
-    clean_content_tags: Option<HashSet<&str>>,
-    attributes: Option<HashMap<&str, HashSet<&str>>>,
+    tags: Option<HashSet<String>>,
+    clean_content_tags: Option<HashSet<String>>,
+    mut attributes: Option<HashMap<String, HashSet<String>>>,
     attribute_filter: Option<PyObject>,
     strip_comments: bool,
     link_rel: Option<&str>,
-    generic_attribute_prefixes: Option<HashSet<&str>>,
-    tag_attribute_values: Option<HashMap<&str, HashMap<&str, HashSet<&str>>>>,
-    set_tag_attribute_values: Option<HashMap<&str, HashMap<&str, &str>>>,
-    url_schemes: Option<HashSet<&str>>,
+    generic_attribute_prefixes: Option<HashSet<String>>,
+    tag_attribute_values: Option<HashMap<String, HashMap<String, HashSet<String>>>>,
+    set_tag_attribute_values: Option<HashMap<String, HashMap<String, String>>>,
+    url_schemes: Option<HashSet<String>>,
 ) -> PyResult<String> {
     if let Some(callback) = attribute_filter.as_ref() {
-        if !callback.as_ref(py).is_callable() {
+        if !callback.bind(py).is_callable() {
             return Err(PyTypeError::new_err("attribute_filter must be callable"));
         }
     }
@@ -94,58 +94,88 @@ fn clean(
             || attributes.is_some()
             || attribute_filter.is_some()
             || !strip_comments
-            || link_rel != Some("noopener noreferrer")
+            || link_rel.as_deref() != Some("noopener noreferrer")
             || generic_attribute_prefixes.is_some()
             || tag_attribute_values.is_some()
             || set_tag_attribute_values.is_some()
             || url_schemes.is_some()
         {
+            let generic_attrs = attributes.as_mut().and_then(|attrs| attrs.remove("*"));
             let mut cleaner = ammonia::Builder::default();
-            if let Some(tags) = tags {
+            if let Some(tags) = tags.as_ref() {
+                let tags: HashSet<&str> = tags.iter().map(|s| s.as_str()).collect();
                 cleaner.tags(tags);
             }
-            if let Some(tags) = clean_content_tags {
+            if let Some(tags) = clean_content_tags.as_ref() {
+                let tags: HashSet<&str> = tags.iter().map(|s| s.as_str()).collect();
                 cleaner.clean_content_tags(tags);
             }
-            if let Some(mut attrs) = attributes {
-                if let Some(generic_attrs) = attrs.remove("*") {
+            if let Some(attrs) = attributes.as_ref() {
+                let attrs: HashMap<&str, HashSet<&str>> = attrs
+                    .iter()
+                    .map(|(k, v)| (k.as_str(), v.iter().map(|s| s.as_str()).collect()))
+                    .collect();
+                cleaner.tag_attributes(attrs);
+                if let Some(generic_attrs) = generic_attrs.as_ref() {
+                    let generic_attrs: HashSet<&str> =
+                        generic_attrs.iter().map(|s| s.as_str()).collect();
                     cleaner.generic_attributes(generic_attrs);
                 }
-                cleaner.tag_attributes(attrs);
             }
-            if let Some(prefixes) = generic_attribute_prefixes {
+            if let Some(prefixes) = generic_attribute_prefixes.as_ref() {
+                let prefixes: HashSet<&str> = prefixes.iter().map(|s| s.as_str()).collect();
                 cleaner.generic_attribute_prefixes(prefixes);
             }
-            if let Some(values) = tag_attribute_values {
+            if let Some(values) = tag_attribute_values.as_ref() {
+                let values: HashMap<&str, HashMap<&str, HashSet<&str>>> = values
+                    .iter()
+                    .map(|(tag, attrs)| {
+                        let inner: HashMap<&str, HashSet<&str>> = attrs
+                            .iter()
+                            .map(|(attr, vals)| {
+                                (attr.as_str(), vals.iter().map(|v| v.as_str()).collect())
+                            })
+                            .collect();
+                        (tag.as_str(), inner)
+                    })
+                    .collect();
                 cleaner.tag_attribute_values(values);
             }
-            if let Some(values) = set_tag_attribute_values {
+            if let Some(values) = set_tag_attribute_values.as_ref() {
+                let values: HashMap<&str, HashMap<&str, &str>> = values
+                    .iter()
+                    .map(|(tag, attrs)| {
+                        let inner: HashMap<&str, &str> = attrs
+                            .iter()
+                            .map(|(attr, val)| (attr.as_str(), val.as_str()))
+                            .collect();
+                        (tag.as_str(), inner)
+                    })
+                    .collect();
                 cleaner.set_tag_attribute_values(values);
             }
             if let Some(callback) = attribute_filter {
                 cleaner.attribute_filter(move |element, attribute, value| {
                     Python::with_gil(|py| {
-                        let res = callback.call_bound(
+                        let res = callback.call(
                             py,
-                            PyTuple::new_bound(
+                            PyTuple::new(
                                 py,
                                 [
-                                    PyString::new_bound(py, element),
-                                    PyString::new_bound(py, attribute),
-                                    PyString::new_bound(py, value),
+                                    PyString::new(py, element),
+                                    PyString::new(py, attribute),
+                                    PyString::new(py, value),
                                 ],
-                            ),
+                            )
+                            .unwrap(),
                             None,
                         );
                         let err = match res {
                             Ok(val) => {
                                 if val.is_none(py) {
                                     return None;
-                                } else if let Ok(s) = val.downcast::<PyString>(py) {
-                                    match s.to_str() {
-                                        Ok(s) => return Some(Cow::<str>::Owned(s.to_string())),
-                                        Err(err) => err,
-                                    }
+                                } else if let Ok(s) = val.extract::<String>(py) {
+                                    return Some(Cow::<str>::Owned(s));
                                 } else {
                                     PyTypeError::new_err(
                                         "expected attribute_filter to return str or None",
@@ -154,24 +184,28 @@ fn clean(
                             }
                             Err(err) => err,
                         };
-                        err.write_unraisable_bound(
+                        err.write_unraisable(
                             py,
-                            Some(&PyTuple::new_bound(
-                                py,
-                                [
-                                    PyString::new_bound(py, element),
-                                    PyString::new_bound(py, attribute),
-                                    PyString::new_bound(py, value),
-                                ],
-                            )),
+                            Some(
+                                &PyTuple::new(
+                                    py,
+                                    [
+                                        PyString::new(py, element),
+                                        PyString::new(py, attribute),
+                                        PyString::new(py, value),
+                                    ],
+                                )
+                                .unwrap(),
+                            ),
                         );
                         Some(value.into())
                     })
                 });
             }
             cleaner.strip_comments(strip_comments);
-            cleaner.link_rel(link_rel);
-            if let Some(url_schemes) = url_schemes {
+            cleaner.link_rel(link_rel.as_deref());
+            if let Some(url_schemes) = url_schemes.as_ref() {
+                let url_schemes: HashSet<_> = url_schemes.iter().map(|s| s.as_str()).collect();
                 cleaner.url_schemes(url_schemes);
             }
             cleaner.clean(html).to_string()
@@ -198,6 +232,7 @@ fn clean(
 ///
 /// .. code-block:: pycon
 ///
+///      >>> import nh3
 ///      >>> nh3.clean_text('Robert"); abuse();//')
 ///      'Robert&quot;);&#32;abuse();&#47;&#47;'
 #[pyfunction]

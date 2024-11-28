@@ -117,7 +117,7 @@ jobs:
         manylinux: auto
         args: --release --out dist
         sccache: true
-    - uses: uraimo/run-on-arch-action@v2.3.0
+    - uses: uraimo/run-on-arch-action@v2.8.1
       if: matrix.target != 'ppc64'
       name: Install built wheel
       with:
@@ -197,7 +197,7 @@ jobs:
         manylinux: musllinux_1_2
         args: --release --out dist
         sccache: true
-    - uses: uraimo/run-on-arch-action@v2.3.0
+    - uses: uraimo/run-on-arch-action@v2.8.1
       name: Install built wheel
       with:
         arch: ${{ matrix.platform.arch }}
