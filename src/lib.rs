@@ -265,7 +265,7 @@ fn is_html(py: Python, html: &str) -> bool {
 }
 
 /// Python bindings to the ammonia HTML sanitization library ( https://github.com/rust-ammonia/ammonia ).
-#[pymodule]
+#[pymodule(gil_used = false)]
 fn nh3(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_function(wrap_pyfunction!(clean, m)?)?;
