@@ -18,13 +18,13 @@ jobs:
           architecture: x64
       - uses: dtolnay/rust-toolchain@nightly
       - name: Build wheels
-        uses: messense/maturin-action@v1
+        uses: pyo3/maturin-action@v1
         with:
           target: universal2-apple-darwin
           args: --release --out dist
           sccache: true
       - name: Build free-threaded wheels
-        uses: messense/maturin-action@v1
+        uses: pyo3/maturin-action@v1
         with:
           target: universal2-apple-darwin
           args: --release --out dist -i python3.13t
@@ -53,13 +53,13 @@ jobs:
           architecture: ${{ matrix.target }}
       - uses: dtolnay/rust-toolchain@nightly
       - name: Build wheels
-        uses: messense/maturin-action@v1
+        uses: pyo3/maturin-action@v1
         with:
           maturin-version: v1.7.7-beta.1
           target: ${{ matrix.target }}
           args: --release --out dist
       - name: Build free-threaded wheels
-        uses: messense/maturin-action@v1
+        uses: pyo3/maturin-action@v1
         with:
           maturin-version: v1.7.7-beta.1
           target: ${{ matrix.target }}
@@ -87,7 +87,7 @@ jobs:
         python-version: 3.12
         architecture: x64
     - name: Build wheels
-      uses: messense/maturin-action@v1
+      uses: pyo3/maturin-action@v1
       with:
         rust-toolchain: nightly
         target: ${{ matrix.target }}
@@ -95,7 +95,7 @@ jobs:
         args: --release --out dist
         sccache: true
     - name: Build free-threaded wheels
-      uses: messense/maturin-action@v1
+      uses: pyo3/maturin-action@v1
       with:
         rust-toolchain: nightly
         target: ${{ matrix.target }}
@@ -125,7 +125,7 @@ jobs:
       with:
         python-version: 3.12
     - name: Build wheels
-      uses: messense/maturin-action@v1
+      uses: pyo3/maturin-action@v1
       with:
         rust-toolchain: nightly
         target: ${{ matrix.target }}
@@ -133,7 +133,7 @@ jobs:
         args: --release --out dist
         sccache: true
     - name: Build free-threaded wheels
-      uses: messense/maturin-action@v1
+      uses: pyo3/maturin-action@v1
       with:
         rust-toolchain: nightly
         target: ${{ matrix.target }}
@@ -174,14 +174,14 @@ jobs:
         python-version: 3.12
         architecture: x64
     - name: Build wheels
-      uses: messense/maturin-action@v1
+      uses: pyo3/maturin-action@v1
       with:
         target: ${{ matrix.target }}
         manylinux: musllinux_1_2
         args: --release --out dist
         sccache: true
     - name: Build free-threaded wheels
-      uses: messense/maturin-action@v1
+      uses: pyo3/maturin-action@v1
       with:
         target: ${{ matrix.target }}
         manylinux: musllinux_1_2
@@ -221,14 +221,14 @@ jobs:
       with:
         python-version: 3.12
     - name: Build wheels
-      uses: messense/maturin-action@v1
+      uses: pyo3/maturin-action@v1
       with:
         target: ${{ matrix.platform.target }}
         manylinux: musllinux_1_2
         args: --release --out dist
         sccache: true
     - name: Build free-threaded wheels
-      uses: messense/maturin-action@v1
+      uses: pyo3/maturin-action@v1
       with:
         target: ${{ matrix.platform.target }}
         manylinux: musllinux_1_2
@@ -254,11 +254,30 @@ jobs:
         name: wheels
         path: dist
 
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+        architecture: x64
+    - name: Build wheels
+      uses: pyo3/maturin-action@v1
+      with:
+        command: sdist
+        args: --out dist
+    - name: Upload sdist
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheels
+        path: dist
+
   release:
     name: Release
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
-    needs: [ macos, windows, linux, linux-cross ]
+    needs: [ macos, windows, linux, linux-cross, musllinux, musllinux-cross, sdist ]
     steps:
       - uses: actions/download-artifact@v3
         with:
