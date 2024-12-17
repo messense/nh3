@@ -2,5 +2,19 @@
 requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
+[project]
+name = "nh3"
+description = "Python binding to Ammonia HTML sanitizer Rust crate"
+authors = [{ name = "messense", email = "messense@icloud.com" }]
+requires-python = ">=3.8"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dynamic = ["version"]
+
 [tool.maturin]
 features = ["pyo3/extension-module"]
