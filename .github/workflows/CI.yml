@@ -55,13 +55,11 @@ jobs:
       - name: Build wheels
         uses: pyo3/maturin-action@v1
         with:
-          maturin-version: v1.7.7-beta.1
           target: ${{ matrix.target }}
           args: --release --out dist
       - name: Build free-threaded wheels
         uses: pyo3/maturin-action@v1
         with:
-          maturin-version: v1.7.7-beta.1
           target: ${{ matrix.target }}
           args: --release --out dist -i python3.13t
       - name: Install built wheel
