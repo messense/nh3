@@ -54,6 +54,38 @@ use pyo3::types::{PyString, PyTuple};
 ///     'hi'
 ///     >>> nh3.clean("<b><img src='' onerror='alert(\\'hax\\')'>XSS?</b>")
 ///     '<b><img src="">XSS?</b>'
+///
+/// Example of using ``attribute_filter``:
+///
+/// .. code-block:: pycon
+///   
+///    >>> from copy import deepcopy
+///    >>> attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
+///    >>> attributes["a"].add("class")
+///    >>> def attribute_filter(tag, attr, value):
+///    ...     if tag == "a" and attr == "class":
+///    ...         if "mention" in value.split(" "):
+///    ...             return "mention"
+///    ...         return None
+///    ...     return value
+///    >>> nh3.clean("<a class='mention unwanted'>@foo</a>", 
+///    ...     attributes=attributes,
+///    ...     attribute_filter=attribute_filter)
+///    '<a class="mention" rel="noopener noreferrer">@foo</a>'
+///
+/// Example of maintaining the ``rel`` attribute:
+///
+/// .. code-block:: pycon
+///
+///    >>> from copy import deepcopy
+///    >>> attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
+///    >>> attributes["a"].add("rel")
+///    >>> nh3.clean("<a href='https://tag.example' rel='tag'>#tag</a>",
+///    ...     link_rel=None, attributes=attributes)
+///    '<a href="https://tag.example" rel="tag">#tag</a>'
+
+
+
 #[pyfunction(signature = (
     html,
     tags = None,
