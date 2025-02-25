@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-    tags: [ 'v*' ]
+    tags: ["v*"]
   pull_request:
 
 jobs:
@@ -35,9 +35,9 @@ jobs:
           pip install pytest
           cd tests && pytest
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-macos
           path: dist
 
   windows:
@@ -68,9 +68,9 @@ jobs:
           pip install pytest
           cd tests && pytest
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-windows-${{ matrix.target }}
           path: dist
 
   linux:
@@ -79,38 +79,38 @@ jobs:
       matrix:
         target: [x86_64, i686]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with:
-        python-version: 3.12
-        architecture: x64
-    - name: Build wheels
-      uses: pyo3/maturin-action@v1
-      with:
-        rust-toolchain: nightly
-        target: ${{ matrix.target }}
-        manylinux: auto
-        args: --release --out dist
-        sccache: true
-    - name: Build free-threaded wheels
-      uses: pyo3/maturin-action@v1
-      with:
-        rust-toolchain: nightly
-        target: ${{ matrix.target }}
-        manylinux: auto
-        args: --release --out dist -i python3.13t
-        sccache: true
-    - name: Install built wheel
-      if: matrix.target == 'x86_64'
-      run: |
-        pip install nh3 --no-index --find-links dist --force-reinstall
-        pip install pytest
-        cd tests && pytest
-    - name: Upload wheels
-      uses: actions/upload-artifact@v3
-      with:
-        name: wheels
-        path: dist
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+          architecture: x64
+      - name: Build wheels
+        uses: pyo3/maturin-action@v1
+        with:
+          rust-toolchain: nightly
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --release --out dist
+          sccache: true
+      - name: Build free-threaded wheels
+        uses: pyo3/maturin-action@v1
+        with:
+          rust-toolchain: nightly
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --release --out dist -i python3.13t
+          sccache: true
+      - name: Install built wheel
+        if: matrix.target == 'x86_64'
+        run: |
+          pip install nh3 --no-index --find-links dist --force-reinstall
+          pip install pytest
+          cd tests && pytest
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-${{ matrix.target }}
+          path: dist
 
   linux-cross:
     runs-on: ubuntu-latest
@@ -118,45 +118,45 @@ jobs:
       matrix:
         target: [aarch64, armv7, s390x, ppc64le, ppc64]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with:
-        python-version: 3.12
-    - name: Build wheels
-      uses: pyo3/maturin-action@v1
-      with:
-        rust-toolchain: nightly
-        target: ${{ matrix.target }}
-        manylinux: auto
-        args: --release --out dist
-        sccache: true
-    - name: Build free-threaded wheels
-      uses: pyo3/maturin-action@v1
-      with:
-        rust-toolchain: nightly
-        target: ${{ matrix.target }}
-        manylinux: auto
-        args: --release --out dist -i python3.13
-        sccache: true
-    - uses: uraimo/run-on-arch-action@v2.8.1
-      if: matrix.target != 'ppc64'
-      name: Install built wheel
-      with:
-        arch: ${{ matrix.target }}
-        distro: ubuntu22.04
-        githubToken: ${{ github.token }}
-        install: |
-          apt-get update
-          apt-get install -y --no-install-recommends python3 python3-pip
-          pip3 install -U pip pytest
-        run: |
-          pip3 install nh3 --no-index --find-links dist/ --force-reinstall
-          cd tests && pytest
-    - name: Upload wheels
-      uses: actions/upload-artifact@v3
-      with:
-        name: wheels
-        path: dist
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+      - name: Build wheels
+        uses: pyo3/maturin-action@v1
+        with:
+          rust-toolchain: nightly
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --release --out dist
+          sccache: true
+      - name: Build free-threaded wheels
+        uses: pyo3/maturin-action@v1
+        with:
+          rust-toolchain: nightly
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --release --out dist -i python3.13
+          sccache: true
+      - uses: uraimo/run-on-arch-action@v2.8.1
+        if: matrix.target != 'ppc64'
+        name: Install built wheel
+        with:
+          arch: ${{ matrix.target }}
+          distro: ubuntu22.04
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update
+            apt-get install -y --no-install-recommends python3 python3-pip
+            pip3 install -U pip pytest
+          run: |
+            pip3 install nh3 --no-index --find-links dist/ --force-reinstall
+            cd tests && pytest
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-${{ matrix.target }}
+          path: dist
 
   musllinux:
     runs-on: ubuntu-latest
@@ -166,43 +166,43 @@ jobs:
           - x86_64-unknown-linux-musl
           - i686-unknown-linux-musl
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with:
-        python-version: 3.12
-        architecture: x64
-    - name: Build wheels
-      uses: pyo3/maturin-action@v1
-      with:
-        target: ${{ matrix.target }}
-        manylinux: musllinux_1_2
-        args: --release --out dist
-        sccache: true
-    - name: Build free-threaded wheels
-      uses: pyo3/maturin-action@v1
-      with:
-        target: ${{ matrix.target }}
-        manylinux: musllinux_1_2
-        args: --release --out dist -i python3.13t
-        sccache: true
-    - name: Install built wheel
-      if: matrix.target == 'x86_64-unknown-linux-musl'
-      uses: addnab/docker-run-action@v3
-      with:
-        image: alpine:latest
-        options: -v ${{ github.workspace }}:/io -w /io
-        run: |
-          apk add py3-virtualenv
-          python3 -m virtualenv .venv
-          source .venv/bin/activate
-          pip install -U pip pytest
-          pip install nh3 --no-index --find-links /io/dist/ --force-reinstall
-          cd tests && python3 -m pytest
-    - name: Upload wheels
-      uses: actions/upload-artifact@v3
-      with:
-        name: wheels
-        path: dist
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+          architecture: x64
+      - name: Build wheels
+        uses: pyo3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          manylinux: musllinux_1_2
+          args: --release --out dist
+          sccache: true
+      - name: Build free-threaded wheels
+        uses: pyo3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          manylinux: musllinux_1_2
+          args: --release --out dist -i python3.13t
+          sccache: true
+      - name: Install built wheel
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        uses: addnab/docker-run-action@v3
+        with:
+          image: alpine:latest
+          options: -v ${{ github.workspace }}:/io -w /io
+          run: |
+            apk add py3-virtualenv
+            python3 -m virtualenv .venv
+            source .venv/bin/activate
+            pip install -U pip pytest
+            pip install nh3 --no-index --find-links /io/dist/ --force-reinstall
+            cd tests && python3 -m pytest
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.target }}
+          path: dist
 
   musllinux-cross:
     runs-on: ubuntu-latest
@@ -214,72 +214,74 @@ jobs:
           - target: armv7-unknown-linux-musleabihf
             arch: armv7
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with:
-        python-version: 3.12
-    - name: Build wheels
-      uses: pyo3/maturin-action@v1
-      with:
-        target: ${{ matrix.platform.target }}
-        manylinux: musllinux_1_2
-        args: --release --out dist
-        sccache: true
-    - name: Build free-threaded wheels
-      uses: pyo3/maturin-action@v1
-      with:
-        target: ${{ matrix.platform.target }}
-        manylinux: musllinux_1_2
-        args: --release --out dist -i python3.13t
-        sccache: true
-    - uses: uraimo/run-on-arch-action@v2.8.1
-      name: Install built wheel
-      with:
-        arch: ${{ matrix.platform.arch }}
-        distro: alpine_latest
-        githubToken: ${{ github.token }}
-        install: |
-          apk add py3-virtualenv
-        run: |
-          python3 -m virtualenv .venv
-          source .venv/bin/activate
-          pip install pytest
-          pip install nh3 --no-index --find-links dist/ --force-reinstall
-          cd tests && python3 -m pytest
-    - name: Upload wheels
-      uses: actions/upload-artifact@v3
-      with:
-        name: wheels
-        path: dist
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+      - name: Build wheels
+        uses: pyo3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          manylinux: musllinux_1_2
+          args: --release --out dist
+          sccache: true
+      - name: Build free-threaded wheels
+        uses: pyo3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          manylinux: musllinux_1_2
+          args: --release --out dist -i python3.13t
+          sccache: true
+      - uses: uraimo/run-on-arch-action@v2.8.1
+        name: Install built wheel
+        with:
+          arch: ${{ matrix.platform.arch }}
+          distro: alpine_latest
+          githubToken: ${{ github.token }}
+          install: |
+            apk add py3-virtualenv
+          run: |
+            python3 -m virtualenv .venv
+            source .venv/bin/activate
+            pip install pytest
+            pip install nh3 --no-index --find-links dist/ --force-reinstall
+            cd tests && python3 -m pytest
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.platform.target }}
+          path: dist
 
   sdist:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-      with:
-        python-version: 3.12
-        architecture: x64
-    - name: Build wheels
-      uses: pyo3/maturin-action@v1
-      with:
-        command: sdist
-        args: --out dist
-    - name: Upload sdist
-      uses: actions/upload-artifact@v3
-      with:
-        name: wheels
-        path: dist
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+          architecture: x64
+      - name: Build wheels
+        uses: pyo3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
 
   release:
     name: Release
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
-    needs: [ macos, windows, linux, linux-cross, musllinux, musllinux-cross, sdist ]
+    needs:
+      [macos, windows, linux, linux-cross, musllinux, musllinux-cross, sdist]
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: wheels
+          pattern: wheels-*
+          merge-multiple: true
       - uses: actions/setup-python@v4
         with:
           python-version: 3.12
