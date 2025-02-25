@@ -92,6 +92,7 @@ jobs:
           manylinux: auto
           args: --release --out dist
           sccache: true
+          before-script-linux: yum install -y libatomic
       - name: Build free-threaded wheels
         uses: pyo3/maturin-action@v1
         with:
@@ -100,6 +101,7 @@ jobs:
           manylinux: auto
           args: --release --out dist -i python3.13t
           sccache: true
+          before-script-linux: yum install -y libatomic
       - name: Install built wheel
         if: matrix.target == 'x86_64'
         run: |
