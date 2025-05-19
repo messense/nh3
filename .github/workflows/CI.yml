@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     branches:
-      - arm64-runner
       - main
     tags: ["v*"]
   pull_request:
