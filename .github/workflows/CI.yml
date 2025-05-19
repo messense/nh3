@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches:
+      - arm64-runner
       - main
     tags: ["v*"]
   pull_request:
@@ -77,13 +78,13 @@ jobs:
     runs-on: windows-11-arm
     strategy:
       matrix:
-        target: [arm64]
+        target: [aarch64-pc-windows-msvc]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: 3.12
-          architecture: ${{ matrix.target }}
+          architecture: arm64
       # rust toolchain is not currently installed on windopws arm64 images https://github.com/actions/partner-runner-images/issues/77
       - name: Setup rust
         id: setup-rust
@@ -94,12 +95,12 @@ jobs:
       - name: Build wheels
         uses: pyo3/maturin-action@v1
         with:
-          target: aarch64-pc-windows-msvc
+          target: ${{ matrix.target }}
           args: --release --out dist -i 
       - name: Build free-threaded wheels
         uses: pyo3/maturin-action@v1
         with:
-          target: aarch64-pc-windows-msvc
+          target: ${{ matrix.target }}
           args: --release --out dist -i python3.13t
       - name: Install built wheel
         run: |
@@ -109,7 +110,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows-${{ matrix.target }}
+          name: wheels-windows-arm-${{ matrix.target }}
           path: dist
 
   linux:
