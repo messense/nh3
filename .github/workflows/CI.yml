@@ -95,12 +95,12 @@ jobs:
       - name: Build wheels
         uses: pyo3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
+          target: aarch64-pc-windows-msvc
           args: --release --out dist -i 
       - name: Build free-threaded wheels
         uses: pyo3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
+          target: aarch64-pc-windows-msvc
           args: --release --out dist -i python3.13t
       - name: Install built wheel
         run: |
