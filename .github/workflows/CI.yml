@@ -89,9 +89,9 @@ jobs:
       - name: Setup rust
         id: setup-rust
         run: |
-            Invoke-WebRequest https://static.rust-lang.org/rustup/dist/aarch64-pc-windows-msvc/rustup-init.exe -OutFile .\rustup-init.exe
-            .\rustup-init.exe -y
-            Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.cargo\bin"
+          Invoke-WebRequest https://static.rust-lang.org/rustup/dist/aarch64-pc-windows-msvc/rustup-init.exe -OutFile .\rustup-init.exe
+          .\rustup-init.exe -y
+          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.cargo\bin"
       - name: Build wheels
         uses: pyo3/maturin-action@v1
         with:
