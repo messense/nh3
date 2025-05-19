@@ -86,8 +86,7 @@ jobs:
           python-version: 3.12
           architecture: ${{ matrix.target }}
       # rust toolchain is not currently installed on windopws arm64 images https://github.com/actions/partner-runner-images/issues/77
-      - if: ${{ matrix.WINDOWS.OS == 'windows-11-arm' }}
-        name: Setup rust
+      - name: Setup rust
         id: setup-rust
         run: |
             Invoke-WebRequest https://static.rust-lang.org/rustup/dist/aarch64-pc-windows-msvc/rustup-init.exe -OutFile .\rustup-init.exe
