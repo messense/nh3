@@ -49,6 +49,23 @@ def test_clean():
         == '<my-tag my-attr="val"></my-tag>'
     )
 
+    assert (
+        nh3.clean(
+            "<span class='a b c'><a href='.' class='c b a'>T</a></span><div class='a b c'>U</div>",
+            allowed_classes={ 'a': {'b', 'c'}, 'span': {'a'} }
+        )
+        == '<span class="a"><a href="." class="c b" rel="noopener noreferrer">T</a></span><div>U</div>'
+    )
+
+    assert (
+        nh3.clean(
+            "<span style='color: red; position: fixed; font-size: var(--something)'>T</span><span style='border: none'></span><div style='color: red'></div>",
+            filter_style_properties={'color', 'font-size'},
+            attributes={'span': {'style'}}
+        )
+        == '<span style="color:red;font-size:var(--something)">T</span><span style=""></span><div></div>'
+    )
+
 
 def test_clean_with_attribute_filter():
     html = "<a href=/><img alt=Home src=foo></a>"

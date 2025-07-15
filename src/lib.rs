@@ -42,6 +42,16 @@ use pyo3::types::{PyString, PyTuple};
 /// :type set_tag_attribute_values: ``dict[str, dict[str, str]]``, optional
 /// :param url_schemes: Sets the URL schemes permitted on ``href`` and ``src`` attributes.
 /// :type url_schemes: ``set[str]``, optional
+/// :param allowed_classes: Sets the CSS classes that are allowed on specific tags.
+///     The values is structured as a map from tag names to a set of class names.
+///     The `class` attribute itself should not be whitelisted if this parameter is used.
+/// :type allowed_classes: ``dict[str, set[str]]``, optional
+/// :param filter_style_properties: Only allows the specified properties in `style` attributes.
+///     Irrelevant if `style` is not an allowed attribute.
+///     Note that if style filtering is enabled style properties will be normalised e.g.
+///     invalid declarations and @rules will be removed, with only syntactically valid
+///     declarations kept.
+/// :type filter_style_properties: ``set[str]``, optional
 /// :return: Sanitized HTML fragment
 /// :rtype: ``str``
 ///
@@ -98,6 +108,8 @@ use pyo3::types::{PyString, PyTuple};
     tag_attribute_values = None,
     set_tag_attribute_values = None,
     url_schemes = None,
+    allowed_classes = None,
+    filter_style_properties = None
 ))]
 #[allow(clippy::too_many_arguments)]
 fn clean(
@@ -113,6 +125,8 @@ fn clean(
     tag_attribute_values: Option<HashMap<String, HashMap<String, HashSet<String>>>>,
     set_tag_attribute_values: Option<HashMap<String, HashMap<String, String>>>,
     url_schemes: Option<HashSet<String>>,
+    allowed_classes: Option<HashMap<String, HashSet<String>>>,
+    filter_style_properties: Option<HashSet<String>>
 ) -> PyResult<String> {
     if let Some(callback) = attribute_filter.as_ref() {
         if !callback.bind(py).is_callable() {
@@ -131,6 +145,8 @@ fn clean(
             || tag_attribute_values.is_some()
             || set_tag_attribute_values.is_some()
             || url_schemes.is_some()
+            || allowed_classes.is_some()
+            || filter_style_properties.is_some()
         {
             let generic_attrs = attributes.as_mut().and_then(|attrs| attrs.remove("*"));
             let mut cleaner = ammonia::Builder::default();
@@ -239,6 +255,14 @@ fn clean(
             if let Some(url_schemes) = url_schemes.as_ref() {
                 let url_schemes: HashSet<_> = url_schemes.iter().map(|s| s.as_str()).collect();
                 cleaner.url_schemes(url_schemes);
+            }
+            if let Some(allowed_classes) = allowed_classes.as_ref() {
+                cleaner.allowed_classes(allowed_classes.iter().map(|(tag, class_set)|
+                    (tag.as_str(), class_set.iter().map(|c| c.as_str()).collect())
+                ).collect());
+            }
+            if let Some(filter_style_properties) = filter_style_properties.as_ref() {
+                cleaner.filter_style_properties(filter_style_properties.iter().map(|prop| prop.as_str()).collect());
             }
             cleaner.clean(html).to_string()
         } else {
