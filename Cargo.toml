@@ -16,3 +16,4 @@ crate-type = ["cdylib"]
 [dependencies]
 ammonia = "4.1.1"
 pyo3 = { version = "0.25.1", features = ["abi3-py38", "generate-import-lib"] }
+ouroboros = "0.18"
