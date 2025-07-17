@@ -48,6 +48,51 @@ struct Inner {
     builder: ammonia::Builder<'this>,
 }
 
+/// Create a reusable sanitizer according to the given options.
+///
+/// :param tags: Sets the tags that are allowed.
+/// :type tags: ``set[str]``, optional
+/// :param clean_content_tags: Sets the tags whose contents will be completely removed from the output.
+/// :type clean_content_tags: ``set[str]``, optional
+/// :param attributes: Sets the HTML attributes that are allowed on specific tags,
+///    ``*`` key means the attributes are allowed on any tag.
+/// :type attributes: ``dict[str, set[str]]``, optional
+/// :param attribute_filter: Allows rewriting of all attributes using a callback.
+///     The callback takes name of the element, attribute and its value.
+///     Returns ``None`` to remove the attribute, or a value to use.
+/// :type attribute_filter: ``Callable[[str, str, str], str | None]``, optional
+/// :param strip_comments: Configures the handling of HTML comments, defaults to ``True``.
+/// :type strip_comments: ``bool``
+/// :param link_rel: Configures a ``rel`` attribute that will be added on links, defaults to ``noopener noreferrer``.
+///     To turn on rel-insertion, pass a space-separated list.
+///     If ``rel`` is in the generic or tag attributes, this must be set to ``None``. Common ``rel`` values to include:
+///
+///     - ``noopener``: This prevents a particular type of XSS attack, and should usually be turned on for untrusted HTML.
+///     - ``noreferrer``: This prevents the browser from sending the source URL to the website that is linked to.
+///     - ``nofollow``: This prevents search engines from using this link for ranking, which disincentivizes spammers.
+/// :type link_rel: ``str``
+/// :param generic_attribute_prefixes: Sets the prefix of attributes that are allowed on any tag.
+/// :type generic_attribute_prefixes: ``set[str]``, optional
+/// :param tag_attribute_values: Sets the values of HTML attributes that are allowed on specific tags.
+///     The value is structured as a map from tag names to a map from attribute names to a set of attribute values.
+///     If a tag is not itself whitelisted, adding entries to this map will do nothing.
+/// :type tag_attribute_values: ``dict[str, dict[str, set[str]]]``, optional
+/// :param set_tag_attribute_values: Sets the values of HTML attributes that are to be set on specific tags.
+///     The value is structured as a map from tag names to a map from attribute names to an attribute value.
+///     If a tag is not itself whitelisted, adding entries to this map will do nothing.
+/// :type set_tag_attribute_values: ``dict[str, dict[str, str]]``, optional
+/// :param url_schemes: Sets the URL schemes permitted on ``href`` and ``src`` attributes.
+/// :type url_schemes: ``set[str]``, optional
+/// :param allowed_classes: Sets the CSS classes that are allowed on specific tags.
+///     The values is structured as a map from tag names to a set of class names.
+///     The `class` attribute itself should not be whitelisted if this parameter is used.
+/// :type allowed_classes: ``dict[str, set[str]]``, optional
+/// :param filter_style_properties: Only allows the specified properties in `style` attributes.
+///     Irrelevant if `style` is not an allowed attribute.
+///     Note that if style filtering is enabled style properties will be normalised e.g.
+///     invalid declarations and @rules will be removed, with only syntactically valid
+///     declarations kept.
+/// :type filter_style_properties: ``set[str]``, optional
 #[pyclass]
 pub struct Cleaner {
     inner: Inner,
@@ -207,51 +252,6 @@ impl Cleaner {
 
 #[pymethods]
 impl Cleaner {
-    /// Create a reusable sanitizer according to the given options.
-    ///
-    /// :param tags: Sets the tags that are allowed.
-    /// :type tags: ``set[str]``, optional
-    /// :param clean_content_tags: Sets the tags whose contents will be completely removed from the output.
-    /// :type clean_content_tags: ``set[str]``, optional
-    /// :param attributes: Sets the HTML attributes that are allowed on specific tags,
-    ///    ``*`` key means the attributes are allowed on any tag.
-    /// :type attributes: ``dict[str, set[str]]``, optional
-    /// :param attribute_filter: Allows rewriting of all attributes using a callback.
-    ///     The callback takes name of the element, attribute and its value.
-    ///     Returns ``None`` to remove the attribute, or a value to use.
-    /// :type attribute_filter: ``Callable[[str, str, str], str | None]``, optional
-    /// :param strip_comments: Configures the handling of HTML comments, defaults to ``True``.
-    /// :type strip_comments: ``bool``
-    /// :param link_rel: Configures a ``rel`` attribute that will be added on links, defaults to ``noopener noreferrer``.
-    ///     To turn on rel-insertion, pass a space-separated list.
-    ///     If ``rel`` is in the generic or tag attributes, this must be set to ``None``. Common ``rel`` values to include:
-    ///
-    ///     - ``noopener``: This prevents a particular type of XSS attack, and should usually be turned on for untrusted HTML.
-    ///     - ``noreferrer``: This prevents the browser from sending the source URL to the website that is linked to.
-    ///     - ``nofollow``: This prevents search engines from using this link for ranking, which disincentivizes spammers.
-    /// :type link_rel: ``str``
-    /// :param generic_attribute_prefixes: Sets the prefix of attributes that are allowed on any tag.
-    /// :type generic_attribute_prefixes: ``set[str]``, optional
-    /// :param tag_attribute_values: Sets the values of HTML attributes that are allowed on specific tags.
-    ///     The value is structured as a map from tag names to a map from attribute names to a set of attribute values.
-    ///     If a tag is not itself whitelisted, adding entries to this map will do nothing.
-    /// :type tag_attribute_values: ``dict[str, dict[str, set[str]]]``, optional
-    /// :param set_tag_attribute_values: Sets the values of HTML attributes that are to be set on specific tags.
-    ///     The value is structured as a map from tag names to a map from attribute names to an attribute value.
-    ///     If a tag is not itself whitelisted, adding entries to this map will do nothing.
-    /// :type set_tag_attribute_values: ``dict[str, dict[str, str]]``, optional
-    /// :param url_schemes: Sets the URL schemes permitted on ``href`` and ``src`` attributes.
-    /// :type url_schemes: ``set[str]``, optional
-    /// :param allowed_classes: Sets the CSS classes that are allowed on specific tags.
-    ///     The values is structured as a map from tag names to a set of class names.
-    ///     The `class` attribute itself should not be whitelisted if this parameter is used.
-    /// :type allowed_classes: ``dict[str, set[str]]``, optional
-    /// :param filter_style_properties: Only allows the specified properties in `style` attributes.
-    ///     Irrelevant if `style` is not an allowed attribute.
-    ///     Note that if style filtering is enabled style properties will be normalised e.g.
-    ///     invalid declarations and @rules will be removed, with only syntactically valid
-    ///     declarations kept.
-    /// :type filter_style_properties: ``set[str]``, optional
     #[new]
     #[pyo3(signature = (
         tags = None,
