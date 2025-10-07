@@ -11,8 +11,8 @@ jobs:
   macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12
           architecture: x64
@@ -46,8 +46,8 @@ jobs:
       matrix:
         target: [x64, x86]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12
           architecture: ${{ matrix.target }}
@@ -79,12 +79,12 @@ jobs:
       matrix:
         target: [aarch64-pc-windows-msvc]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12
           architecture: arm64
-      # rust toolchain is not currently installed on windopws arm64 images https://github.com/actions/partner-runner-images/issues/77
+      # rust toolchain is not currently installed on Windows arm64 images https://github.com/actions/partner-runner-images/issues/77
       - name: Setup rust
         id: setup-rust
         run: |
@@ -118,8 +118,8 @@ jobs:
       matrix:
         target: [x86_64, i686]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12
           architecture: x64
@@ -159,8 +159,8 @@ jobs:
       matrix:
         target: [aarch64, armv7, s390x, ppc64le, ppc64]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12
       - name: Build wheels
@@ -179,7 +179,7 @@ jobs:
           manylinux: auto
           args: --release --out dist -i python3.13
           sccache: true
-      - uses: uraimo/run-on-arch-action@v2.8.1
+      - uses: uraimo/run-on-arch-action@v3.0.1
         if: matrix.target != 'ppc64'
         name: Install built wheel
         with:
@@ -207,8 +207,8 @@ jobs:
           - x86_64-unknown-linux-musl
           - i686-unknown-linux-musl
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12
           architecture: x64
@@ -255,8 +255,8 @@ jobs:
           - target: armv7-unknown-linux-musleabihf
             arch: armv7
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12
       - name: Build wheels
@@ -273,7 +273,7 @@ jobs:
           manylinux: musllinux_1_2
           args: --release --out dist -i python3.13t
           sccache: true
-      - uses: uraimo/run-on-arch-action@v2.8.1
+      - uses: uraimo/run-on-arch-action@v3.0.1
         name: Install built wheel
         with:
           arch: ${{ matrix.platform.arch }}
@@ -296,8 +296,8 @@ jobs:
   sdist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12
           architecture: x64
@@ -319,11 +319,11 @@ jobs:
     needs:
       [macos, windows, windows-arm, linux, linux-cross, musllinux, musllinux-cross, sdist]
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           pattern: wheels-*
           merge-multiple: true
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12
       - name: Publish to PyPI
