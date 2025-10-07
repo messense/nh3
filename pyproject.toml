@@ -6,6 +6,7 @@ build-backend = "maturin"
 name = "nh3"
 description = "Python binding to Ammonia HTML sanitizer Rust crate"
 authors = [{ name = "messense", email = "messense@icloud.com" }]
+readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 classifiers = [
