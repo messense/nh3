@@ -27,7 +27,7 @@ jobs:
         uses: pyo3/maturin-action@v1
         with:
           target: universal2-apple-darwin
-          args: --release --out dist -i python3.13t
+          args: --release --out dist -i python3.14t
           sccache: true
       - name: Install built wheel
         run: |
@@ -61,7 +61,7 @@ jobs:
         uses: pyo3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist -i python3.13t
+          args: --release --out dist -i python3.14t
       - name: Install built wheel
         run: |
           pip install nh3 --no-index --find-links dist --force-reinstall
@@ -93,7 +93,7 @@ jobs:
         uses: pyo3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist -i python3.13t
+          args: --release --out dist -i python3.14t
       - name: Install built wheel
         run: |
           pip install nh3 --no-index --find-links dist --force-reinstall
@@ -131,7 +131,7 @@ jobs:
           rust-toolchain: nightly
           target: ${{ matrix.target }}
           manylinux: auto
-          args: --release --out dist -i python3.13t
+          args: --release --out dist -i python3.14t
           sccache: true
           before-script-linux: yum install -y libatomic
       - name: Install built wheel
@@ -217,7 +217,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
-          args: --release --out dist -i python3.13t
+          args: --release --out dist -i python3.14t
           sccache: true
       - name: Install built wheel
         if: matrix.target == 'x86_64-unknown-linux-musl'
@@ -264,7 +264,7 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           manylinux: musllinux_1_2
-          args: --release --out dist -i python3.13t
+          args: --release --out dist -i python3.14t
           sccache: true
       - uses: uraimo/run-on-arch-action@v3.0.1
         name: Install built wheel
