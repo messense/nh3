@@ -10,7 +10,7 @@ struct Config {
     tags: Option<HashSet<String>>,
     clean_content_tags: Option<HashSet<String>>,
     attributes: Option<HashMap<String, HashSet<String>>>,
-    attribute_filter: Option<PyObject>,
+    attribute_filter: Option<Py<PyAny>>,
     strip_comments: bool,
     link_rel: Option<String>,
     generic_attribute_prefixes: Option<HashSet<String>>,
@@ -167,10 +167,10 @@ impl Cleaner {
         let attribute_filter = config
             .attribute_filter
             .as_ref()
-            .map(|f| Python::with_gil(|py| f.clone_ref(py)));
+            .map(|f| Python::attach(|py| f.clone_ref(py)));
         if let Some(callback) = attribute_filter {
             builder.attribute_filter(move |element, attribute, value| {
-                Python::with_gil(|py| {
+                Python::attach(|py| {
                     let res = callback.call(
                         py,
                         PyTuple::new(
@@ -275,7 +275,7 @@ impl Cleaner {
         tags: Option<HashSet<String>>,
         clean_content_tags: Option<HashSet<String>>,
         attributes: Option<HashMap<String, HashSet<String>>>,
-        attribute_filter: Option<PyObject>,
+        attribute_filter: Option<Py<PyAny>>,
         strip_comments: bool,
         link_rel: Option<&str>,
         generic_attribute_prefixes: Option<HashSet<String>>,
@@ -310,7 +310,7 @@ impl Cleaner {
     /// Sanitize an HTML fragment
     #[pyo3(name = "clean")]
     fn py_clean(&self, py: Python, html: &str) -> PyResult<String> {
-        Ok(py.allow_threads(|| self.clean(html)))
+        Ok(py.detach(|| self.clean(html)))
     }
 }
 
@@ -383,7 +383,7 @@ fn clean(
     tags: Option<HashSet<String>>,
     clean_content_tags: Option<HashSet<String>>,
     attributes: Option<HashMap<String, HashSet<String>>>,
-    attribute_filter: Option<PyObject>,
+    attribute_filter: Option<Py<PyAny>>,
     strip_comments: bool,
     link_rel: Option<&str>,
     generic_attribute_prefixes: Option<HashSet<String>>,
@@ -408,7 +408,7 @@ fn clean(
         allowed_classes,
         filter_style_properties,
     )?;
-    Ok(py.allow_threads(|| cleaner.clean(html)))
+    Ok(py.detach(|| cleaner.clean(html)))
 }
 
 /// Turn an arbitrary string into unformatted HTML.
@@ -431,7 +431,7 @@ fn clean(
 ///      'Robert&quot;);&#32;abuse();&#47;&#47;'
 #[pyfunction]
 fn clean_text(py: Python, html: &str) -> String {
-    py.allow_threads(|| ammonia::clean_text(html))
+    py.detach(|| ammonia::clean_text(html))
 }
 
 /// Determine if a given string contains HTML.
@@ -455,7 +455,7 @@ fn clean_text(py: Python, html: &str) -> String {
 ///     True
 #[pyfunction]
 fn is_html(py: Python, html: &str) -> bool {
-    py.allow_threads(|| ammonia::is_html(html))
+    py.detach(|| ammonia::is_html(html))
 }
 
 /// Python bindings to the ammonia HTML sanitization library ( https://github.com/rust-ammonia/ammonia ).
