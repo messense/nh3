@@ -188,12 +188,15 @@ impl Cleaner {
                         Ok(val) => {
                             if val.is_none(py) {
                                 return None;
-                            } else if let Ok(s) = val.extract::<String>(py) {
-                                return Some(Cow::<str>::Owned(s));
                             } else {
-                                PyTypeError::new_err(
-                                    "expected attribute_filter to return str or None",
-                                )
+                                match val.extract::<String>(py) {
+                                    Ok(s) => {
+                                        return Some(Cow::<str>::Owned(s));
+                                    }
+                                    _ => PyTypeError::new_err(
+                                        "expected attribute_filter to return str or None",
+                                    ),
+                                }
                             }
                         }
                         Err(err) => err,
