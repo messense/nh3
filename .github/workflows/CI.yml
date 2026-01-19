@@ -259,6 +259,8 @@ jobs:
             arch: aarch64
           - target: armv7-unknown-linux-musleabihf
             arch: armv7
+          - target: riscv64gc-unknown-linux-musl
+            arch: riscv64
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -295,7 +297,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v6
         with:
-          name: wheels-${{ matrix.platform.target }}
+          name: wheels-${{ matrix.platform.arch }}
           path: dist
 
   sdist:
