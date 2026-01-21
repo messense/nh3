@@ -9,8 +9,8 @@ sphinx:
 build:
   os: "ubuntu-22.04"
   tools:
-    python: "3.12"
-    rust: "1.82"
+    python: "3.14"
+    rust: "latest"
 
 python:
   install:
