@@ -150,7 +150,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [aarch64, armv7, s390x, ppc64le, ppc64]
+        platform:
+          - target: aarch64-unknown-linux-gnu
+            arch: aarch64
+          - target: armv7-unknown-linux-gnueabihf
+            arch: armv7
+          - target: s390x-unknown-linux-gnu
+            arch: s390x
+          - target: powerpc64le-unknown-linux-gnu
+            arch: ppc64le
+          - target: powerpc64-unknown-linux-gnu
+            arch: ppc64
+          - target: riscv64gc-unknown-linux-gnu
+            arch: riscv64
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
@@ -160,7 +172,7 @@ jobs:
         uses: pyo3/maturin-action@v1
         with:
           rust-toolchain: nightly
-          target: ${{ matrix.target }}
+          target: ${{ matrix.platform.target }}
           manylinux: auto
           args: --release --out dist
           sccache: true
@@ -168,15 +180,15 @@ jobs:
         uses: pyo3/maturin-action@v1
         with:
           rust-toolchain: nightly
-          target: ${{ matrix.target }}
+          target: ${{ matrix.platform.target }}
           manylinux: auto
           args: --release --out dist -i python3.13
           sccache: true
       - uses: uraimo/run-on-arch-action@v3.0.1
-        if: matrix.target != 'ppc64'
+        if: matrix.platform.arch != 'ppc64'
         name: Install built wheel
         with:
-          arch: ${{ matrix.target }}
+          arch: ${{ matrix.platform.arch }}
           distro: ubuntu22.04
           githubToken: ${{ github.token }}
           install: |
@@ -189,7 +201,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v6
         with:
-          name: wheels-linux-${{ matrix.target }}
+          name: wheels-linux-${{ matrix.platform.arch }}
           path: dist
 
   musllinux:
@@ -283,7 +295,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v6
         with:
-          name: wheels-${{ matrix.platform.target }}
+          name: wheels-${{ matrix.platform.arch }}
           path: dist
 
   sdist:
