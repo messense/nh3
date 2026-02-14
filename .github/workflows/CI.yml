@@ -233,17 +233,15 @@ jobs:
           sccache: true
       - name: Install built wheel
         if: matrix.target == 'x86_64-unknown-linux-musl'
-        uses: addnab/docker-run-action@v3
-        with:
-          image: alpine:latest
-          options: -v ${{ github.workspace }}:/io -w /io
-          run: |
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/io -w /io alpine:latest sh -c '
             apk add py3-virtualenv
             python3 -m virtualenv .venv
             source .venv/bin/activate
             pip install -U pip pytest
             pip install nh3 --no-index --find-links /io/dist/ --force-reinstall
             cd tests && python3 -m pytest
+          '
       - name: Upload wheels
         uses: actions/upload-artifact@v6
         with:
