@@ -35,7 +35,7 @@ jobs:
           pip install pytest
           cd tests && pytest
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-macos
           path: dist
@@ -68,7 +68,7 @@ jobs:
           pip install pytest
           cd tests && pytest
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-windows-${{ matrix.target }}
           path: dist
@@ -100,7 +100,7 @@ jobs:
           pip install pytest
           cd tests && pytest
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-windows-arm-${{ matrix.target }}
           path: dist
@@ -141,7 +141,7 @@ jobs:
           pip install pytest
           cd tests && pytest
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-${{ matrix.target }}
           path: dist
@@ -199,7 +199,7 @@ jobs:
             pip3 install nh3 --no-index --find-links dist/ --force-reinstall
             cd tests && pytest
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-${{ matrix.platform.arch }}
           path: dist
@@ -243,7 +243,7 @@ jobs:
             cd tests && python3 -m pytest
           '
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ matrix.target }}
           path: dist
@@ -291,7 +291,7 @@ jobs:
             pip install nh3 --no-index --find-links dist/ --force-reinstall
             cd tests && python3 -m pytest
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ matrix.platform.arch }}
           path: dist
@@ -310,7 +310,7 @@ jobs:
           command: sdist
           args: --out dist
       - name: Upload sdist
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-sdist
           path: dist
@@ -322,7 +322,7 @@ jobs:
     needs:
       [macos, windows, windows-arm, linux, linux-cross, musllinux, musllinux-cross, sdist]
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: wheels-*
           merge-multiple: true
