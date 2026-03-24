@@ -484,5 +484,6 @@ fn nh3(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add("ALLOWED_TAGS", a.clone_tags())?;
     m.add("ALLOWED_ATTRIBUTES", a.clone_tag_attributes())?;
     m.add("ALLOWED_URL_SCHEMES", a.clone_url_schemes())?;
+    m.add("CLEAN_CONTENT_TAGS", a.clone_clean_content_tags())?;
     Ok(())
 }

@@ -135,6 +135,12 @@ def test_clean_text():
     assert res == "Robert&quot;);&#32;abuse();&#47;&#47;"
 
 
+def test_clean_content_tags_constant():
+    assert isinstance(nh3.CLEAN_CONTENT_TAGS, set)
+    assert "script" in nh3.CLEAN_CONTENT_TAGS
+    assert "style" in nh3.CLEAN_CONTENT_TAGS
+
+
 def test_is_html():
     assert not nh3.is_html("plain text")
     assert nh3.is_html("<p>html!</p>")

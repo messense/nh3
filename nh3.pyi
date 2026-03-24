@@ -3,6 +3,7 @@ from typing import Callable, Dict, Optional, Set
 ALLOWED_TAGS: Set[str]
 ALLOWED_ATTRIBUTES: Dict[str, Set[str]]
 ALLOWED_URL_SCHEMES: Set[str]
+CLEAN_CONTENT_TAGS: Set[str]
 
 class Cleaner:
     def __init__(
