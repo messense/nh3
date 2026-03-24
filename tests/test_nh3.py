@@ -88,6 +88,48 @@ def test_clean_with_attribute_filter():
     nh3.clean(html, attribute_filter=lambda _element, _attribute, _value: True)
 
 
+def test_clean_rel_attribute_conflict():
+    with pytest.raises(ValueError, match="link_rel is set"):
+        nh3.clean(
+            "<a href='http://example.com'>test</a>",
+            tags={"a"},
+            attributes={"a": {"href", "rel"}},
+        )
+
+    # No error when link_rel=None
+    result = nh3.clean(
+        "<a href='http://example.com' rel='nofollow'>test</a>",
+        tags={"a"},
+        attributes={"a": {"href", "rel"}},
+        link_rel=None,
+    )
+    assert result == '<a href="http://example.com" rel="nofollow">test</a>'
+
+    # No error when rel is not in attributes
+    nh3.clean(
+        "<a href='http://example.com'>test</a>",
+        tags={"a"},
+        attributes={"a": {"href"}},
+    )
+
+
+def test_cleaner_rel_attribute_conflict():
+    with pytest.raises(ValueError, match="link_rel is set"):
+        nh3.Cleaner(
+            tags={"a"},
+            attributes={"a": {"href", "rel"}},
+        )
+
+    # No error when link_rel=None
+    cleaner = nh3.Cleaner(
+        tags={"a"},
+        attributes={"a": {"href", "rel"}},
+        link_rel=None,
+    )
+    result = cleaner.clean("<a href='http://example.com' rel='nofollow'>test</a>")
+    assert result == '<a href="http://example.com" rel="nofollow">test</a>'
+
+
 def test_clean_text():
     res = nh3.clean_text('Robert"); abuse();//')
     assert res == "Robert&quot;);&#32;abuse();&#47;&#47;"
