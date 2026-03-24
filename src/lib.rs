@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 
 use ouroboros::self_referencing;
-use pyo3::exceptions::PyTypeError;
+use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyString, PyTuple};
 
@@ -288,6 +288,19 @@ impl Cleaner {
         if let Some(callback) = attribute_filter.as_ref() {
             if !callback.bind(py).is_callable() {
                 return Err(PyTypeError::new_err("attribute_filter must be callable"));
+            }
+        }
+        if link_rel.is_some() {
+            if let Some(ref attrs) = attributes {
+                for (tag, attr_set) in attrs.iter() {
+                    if attr_set.contains("rel") {
+                        return Err(PyValueError::new_err(format!(
+                            "\"rel\" attribute is not allowed for tag \"{}\" when link_rel is set; \
+                             pass link_rel=None to manage the \"rel\" attribute directly",
+                            tag
+                        )));
+                    }
+                }
             }
         }
         let config = Config {
