@@ -141,6 +141,23 @@ def test_clean_content_tags_constant():
     assert "style" in nh3.CLEAN_CONTENT_TAGS
 
 
+def test_frozenset_args():
+    html = "<b><img src='x'>hello</b>"
+    assert nh3.clean(html, tags=frozenset({"b"})) == "<b>hello</b>"
+    assert (
+        nh3.clean(html, tags=frozenset({"img"}), attributes={"img": frozenset({"src"})})
+        == '<img src="x">hello'
+    )
+
+
+def test_cleaner_frozenset_args():
+    cleaner = nh3.Cleaner(
+        tags=frozenset({"b", "img"}),
+        attributes={"img": frozenset({"src"})},
+    )
+    assert cleaner.clean("<b><img src='x'>hi</b>") == '<b><img src="x">hi</b>'
+
+
 def test_is_html():
     assert not nh3.is_html("plain text")
     assert nh3.is_html("<p>html!</p>")
