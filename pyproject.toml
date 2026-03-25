@@ -19,3 +19,7 @@ dynamic = ["urls", "version"]
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
+
+[tool.pytest.ini_options]
+addopts = "--doctest-glob=*.rst"
+testpaths = ["tests", "docs"]
