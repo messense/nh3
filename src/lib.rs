@@ -93,6 +93,17 @@ struct Inner {
 ///     invalid declarations and @rules will be removed, with only syntactically valid
 ///     declarations kept.
 /// :type filter_style_properties: ``set[str]``, optional
+///
+/// Example usage:
+///
+/// .. code-block:: pycon
+///
+///    >>> import nh3
+///    >>> cleaner = nh3.Cleaner(tags={"b", "i"}, attributes={})
+///    >>> cleaner.clean("<b><i>safe</i></b><script>xss</script>")
+///    '<b><i>safe</i></b>'
+///    >>> cleaner.clean("<b>another</b> <em>fragment</em>")
+///    '<b>another</b> fragment'
 #[pyclass]
 pub struct Cleaner {
     inner: Inner,
@@ -344,6 +355,73 @@ impl Cleaner {
 ///     'hi'
 ///     >>> nh3.clean("<b><img src='' onerror='alert(\\'hax\\')'>XSS?</b>")
 ///     '<b><img src="">XSS?</b>'
+///
+/// Use ``tags`` to only allow certain HTML tags:
+///
+/// .. code-block:: pycon
+///
+///    >>> nh3.clean("<b><i>bold italic</i></b>", tags={"b"})
+///    '<b>bold italic</b>'
+///
+/// ``clean_content_tags`` removes both the tag and its content, unlike ``tags``
+/// which strips the tag but keeps the text:
+///
+/// .. code-block:: pycon
+///
+///    >>> nh3.clean(
+///    ...     "<script>alert('xss')</script>safe",
+///    ...     clean_content_tags={"script"},
+///    ... )
+///    'safe'
+///
+/// The ``attributes`` parameter controls which attributes are kept per tag.
+/// Use ``"*"`` as a key to allow an attribute on all tags:
+///
+/// .. code-block:: pycon
+///
+///    >>> nh3.clean(
+///    ...     '<a href="/" id="link">click</a>',
+///    ...     attributes={"*": {"id"}, "a": {"href"}},
+///    ... )
+///    '<a href="/" id="link" rel="noopener noreferrer">click</a>'
+///
+/// ``tag_attribute_values`` restricts an attribute to a set of allowed values,
+/// while ``set_tag_attribute_values`` unconditionally adds attributes:
+///
+/// .. code-block:: pycon
+///
+///    >>> nh3.clean(
+///    ...     "<div role='alert'>warning</div>",
+///    ...     tag_attribute_values={"div": {"role": {"alert", "status"}}},
+///    ... )
+///    '<div role="alert">warning</div>'
+///    >>> nh3.clean(
+///    ...     "<div>content</div>",
+///    ...     set_tag_attribute_values={"div": {"class": "safe"}},
+///    ... )
+///    '<div class="safe">content</div>'
+///
+/// ``allowed_classes`` filters CSS class names per tag:
+///
+/// .. code-block:: pycon
+///
+///    >>> nh3.clean(
+///    ...     '<span class="highlight bold">text</span>',
+///    ...     allowed_classes={"span": {"highlight"}},
+///    ... )
+///    '<span class="highlight">text</span>'
+///
+/// To filter individual ``style`` properties, first allow the ``style``
+/// attribute, then use ``filter_style_properties``:
+///
+/// .. code-block:: pycon
+///
+///    >>> nh3.clean(
+///    ...     '<span style="color: red; position: fixed">text</span>',
+///    ...     attributes={"span": {"style"}},
+///    ...     filter_style_properties={"color"},
+///    ... )
+///    '<span style="color:red">text</span>'
 ///
 /// Example of using ``attribute_filter``:
 ///
