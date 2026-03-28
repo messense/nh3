@@ -504,12 +504,18 @@ fn clean(
 
 /// Turn an arbitrary string into unformatted HTML.
 ///
-/// Roughly equivalent to Python’s html.escape() or PHP’s htmlspecialchars and
+/// Roughly equivalent to Python's html.escape() or PHP's htmlspecialchars and
 /// htmlentities. Escaping is as strict as possible, encoding every character
 /// that has special meaning to the HTML parser.
 ///
+/// If ``tags`` is given, those tags are passed through with no attributes;
+/// everything else is stripped (content kept). Behaves like :func:`clean`
+/// with ``attributes={}`` restricted to the given tag set.
+///
 /// :param html: Input HTML fragment
 /// :type html: ``str``
+/// :param tags: Tags to preserve; when omitted the string is fully escaped.
+/// :type tags: ``set[str]``, optional
 /// :return: Cleaned text
 /// :rtype: ``str``
 ///
@@ -520,9 +526,22 @@ fn clean(
 ///      >>> import nh3
 ///      >>> nh3.clean_text('Robert"); abuse();//')
 ///      'Robert&quot;);&#32;abuse();&#47;&#47;'
-#[pyfunction]
-fn clean_text(py: Python, html: &str) -> String {
-    py.detach(|| ammonia::clean_text(html))
+///      >>> nh3.clean_text('<span>hello <mention>moto</mention>!</span>', tags={'mention'})
+///      'hello <mention>moto</mention>!'
+#[pyfunction(signature = (html, tags = None))]
+fn clean_text(py: Python, html: &str, tags: Option<HashSet<String>>) -> String {
+    match tags {
+        None => py.detach(|| ammonia::clean_text(html)),
+        Some(tags) => {
+            let config = Config {
+                tags: Some(tags),
+                attributes: Some(HashMap::new()),
+                ..Default::default()
+            };
+            let cleaner = Cleaner::new(config);
+            py.detach(|| cleaner.clean(html))
+        }
+    }
 }
 
 /// Determine if a given string contains HTML.
