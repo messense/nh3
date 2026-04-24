@@ -536,6 +536,7 @@ fn clean_text(py: Python, html: &str, tags: Option<HashSet<String>>) -> String {
             let config = Config {
                 tags: Some(tags),
                 attributes: Some(HashMap::new()),
+                link_rel: None,
                 ..Default::default()
             };
             let cleaner = Cleaner::new(config);
