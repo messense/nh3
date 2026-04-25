@@ -134,6 +134,21 @@ def test_clean_text():
     res = nh3.clean_text('Robert"); abuse();//')
     assert res == "Robert&quot;);&#32;abuse();&#47;&#47;"
 
+    res = nh3.clean_text(
+        '<span>hello <mention>moto</mention>, welcome!</span>',
+        tags={'mention'},
+    )
+    assert res == 'hello <mention>moto</mention>, welcome!'
+
+    res = nh3.clean_text('<b>bold</b> and <i>italic</i>', tags={'b'})
+    assert res == '<b>bold</b> and italic'
+
+    res = nh3.clean_text(
+        "<a href='http://example.com' rel='nofollow'>test</a>",
+        tags={'a'},
+    )
+    assert res == '<a>test</a>'
+
 
 def test_clean_content_tags_constant():
     assert isinstance(nh3.CLEAN_CONTENT_TAGS, set)
