@@ -78,6 +78,12 @@ struct Inner {
 /// :param tag_attribute_values: Sets the values of HTML attributes that are allowed on specific tags.
 ///     The value is structured as a map from tag names to a map from attribute names to a set of attribute values.
 ///     If a tag is not itself whitelisted, adding entries to this map will do nothing.
+///
+///     This map is an *alternate* to the entries of ``attributes`` (and ``attributes["*"]``):
+///     if the same attribute is also whitelisted there for the same tag, every value is
+///     accepted and this per-value whitelist is ignored for that attribute. To actually
+///     restrict the allowed values, whitelist the tag but do **not** also list the
+///     attribute in ``attributes``.
 /// :type tag_attribute_values: ``dict[str, dict[str, set[str]]]``, optional
 /// :param set_tag_attribute_values: Sets the values of HTML attributes that are to be set on specific tags.
 ///     The value is structured as a map from tag names to a map from attribute names to an attribute value.
@@ -411,8 +417,12 @@ impl Cleaner {
 ///    ... )
 ///    '<a href="/" id="link" rel="noopener noreferrer">click</a>'
 ///
-/// ``tag_attribute_values`` restricts an attribute to a set of allowed values,
-/// while ``set_tag_attribute_values`` unconditionally adds attributes:
+/// ``tag_attribute_values`` restricts an attribute to a set of allowed values
+/// (values outside the set cause the attribute to be stripped), while
+/// ``set_tag_attribute_values`` unconditionally adds attributes. Note that
+/// ``tag_attribute_values`` is an *alternate* to ``attributes`` — if the same
+/// attribute is also whitelisted in ``attributes`` for that tag, every value
+/// is allowed and the per-value whitelist is ignored:
 ///
 /// .. code-block:: pycon
 ///
@@ -421,6 +431,11 @@ impl Cleaner {
 ///    ...     tag_attribute_values={"div": {"role": {"alert", "status"}}},
 ///    ... )
 ///    '<div role="alert">warning</div>'
+///    >>> nh3.clean(
+///    ...     "<div role='banner'>warning</div>",
+///    ...     tag_attribute_values={"div": {"role": {"alert", "status"}}},
+///    ... )
+///    '<div>warning</div>'
 ///    >>> nh3.clean(
 ///    ...     "<div>content</div>",
 ///    ...     set_tag_attribute_values={"div": {"class": "safe"}},
