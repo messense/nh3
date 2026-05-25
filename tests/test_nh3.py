@@ -130,6 +130,50 @@ def test_cleaner_rel_attribute_conflict():
     assert result == '<a href="http://example.com" rel="nofollow">test</a>'
 
 
+def test_clean_content_tags_overlap_with_default_tags():
+    # Without explicit ``tags``, ammonia's default allowed tags are used; placing
+    # any of those tags in ``clean_content_tags`` would otherwise panic the
+    # interpreter. Validate up-front with a clear ValueError instead.
+    with pytest.raises(ValueError, match="clean_content_tags"):
+        nh3.clean("<p>hi</p>", clean_content_tags={"p"})
+
+    with pytest.raises(ValueError, match="clean_content_tags"):
+        nh3.clean("<div><b>hi</b></div>", clean_content_tags={"b", "script"})
+
+
+def test_clean_content_tags_overlap_with_explicit_tags():
+    # Explicit ``tags`` set that intersects ``clean_content_tags`` is also a
+    # contradiction and must raise rather than panic.
+    with pytest.raises(ValueError, match="clean_content_tags"):
+        nh3.clean(
+            "<div><b>hi</b></div>",
+            tags={"div", "b"},
+            clean_content_tags={"b"},
+        )
+
+
+def test_clean_content_tags_no_overlap_ok():
+    # ``clean_content_tags`` works with tags absent from the allowed set
+    # (default or explicit).
+    assert nh3.clean("<script>x</script>safe", clean_content_tags={"script"}) == "safe"
+    assert (
+        nh3.clean(
+            "<div><b>hi</b></div>",
+            tags={"div"},
+            clean_content_tags={"b"},
+        )
+        == "<div></div>"
+    )
+
+
+def test_cleaner_clean_content_tags_overlap():
+    with pytest.raises(ValueError, match="clean_content_tags"):
+        nh3.Cleaner(clean_content_tags={"p"})
+
+    with pytest.raises(ValueError, match="clean_content_tags"):
+        nh3.Cleaner(tags={"a"}, clean_content_tags={"a"})
+
+
 def test_clean_text():
     res = nh3.clean_text('Robert"); abuse();//')
     assert res == "Robert&quot;);&#32;abuse();&#47;&#47;"

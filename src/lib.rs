@@ -53,6 +53,8 @@ struct Inner {
 /// :param tags: Sets the tags that are allowed.
 /// :type tags: ``set[str]``, optional
 /// :param clean_content_tags: Sets the tags whose contents will be completely removed from the output.
+///     Must be disjoint from ``tags`` (or the default allowed set when ``tags``
+///     is omitted); a tag cannot be both kept and have its content stripped.
 /// :type clean_content_tags: ``set[str]``, optional
 /// :param attributes: Sets the HTML attributes that are allowed on specific tags,
 ///    ``*`` key means the attributes are allowed on any tag.
@@ -312,6 +314,30 @@ impl Cleaner {
                         )));
                     }
                 }
+            }
+        }
+        if let Some(ref clean_tags) = clean_content_tags {
+            // A tag listed in both the allowed `tags` set and `clean_content_tags`
+            // makes ammonia panic. Raise an explicit ValueError instead. When the
+            // caller omits `tags`, ammonia falls back to its default allowed set,
+            // so check against that default in order to catch e.g.
+            // `clean_content_tags={"p"}`.
+            let conflict = match tags.as_ref() {
+                Some(allowed) => clean_tags.iter().find(|t| allowed.contains(t.as_str())),
+                None => {
+                    let default_tags = ammonia::Builder::default().clone_tags();
+                    clean_tags
+                        .iter()
+                        .find(|t| default_tags.contains(t.as_str()))
+                }
+            };
+            if let Some(tag) = conflict {
+                return Err(PyValueError::new_err(format!(
+                    "tag \"{}\" cannot appear in both `tags` and `clean_content_tags`; \
+                     either remove it from `clean_content_tags` or pass an explicit \
+                     `tags` set that excludes it",
+                    tag
+                )));
             }
         }
         let config = Config {
