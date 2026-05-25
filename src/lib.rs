@@ -504,6 +504,9 @@ fn clean(
 
 /// Turn an arbitrary string into unformatted HTML.
 ///
+/// Also exposed as :func:`escape`, which is the preferred name — the function escapes
+/// input rather than sanitizing HTML.
+///
 /// Roughly equivalent to Python's html.escape() or PHP's htmlspecialchars and
 /// htmlentities. Escaping is as strict as possible, encoding every character
 /// that has special meaning to the HTML parser.
@@ -545,6 +548,40 @@ fn clean_text(py: Python, html: &str, tags: Option<HashSet<String>>) -> String {
     }
 }
 
+/// HTML-escape an arbitrary string.
+///
+/// Alias for :func:`clean_text` — same signature, same behaviour. The ``escape`` name
+/// is preferred because the function escapes input rather than sanitizing HTML.
+///
+/// Note: this is stricter than Python's stdlib :func:`html.escape`. ``html.escape``
+/// only encodes ``&``, ``<``, ``>``, and optionally ``"`` and ``'``; ``nh3.escape``
+/// encodes every character that has special meaning to the HTML parser.
+///
+/// If ``tags`` is given, those tags are passed through with no attributes; everything
+/// else is stripped (content kept). Behaves like :func:`clean` with ``attributes={}``
+/// restricted to the given tag set.
+///
+/// :param html: Input HTML fragment
+/// :type html: ``str``
+/// :param tags: Tags to preserve; when omitted the string is fully escaped.
+/// :type tags: ``set[str]``, optional
+/// :return: Escaped text
+/// :rtype: ``str``
+///
+/// For example:
+///
+/// .. code-block:: pycon
+///
+///      >>> import nh3
+///      >>> nh3.escape('Robert"); abuse();//')
+///      'Robert&quot;);&#32;abuse();&#47;&#47;'
+///      >>> nh3.escape('<span>hello <mention>moto</mention>!</span>', tags={'mention'})
+///      'hello <mention>moto</mention>!'
+#[pyfunction(signature = (html, tags = None))]
+fn escape(py: Python, html: &str, tags: Option<HashSet<String>>) -> String {
+    clean_text(py, html, tags)
+}
+
 /// Determine if a given string contains HTML.
 ///
 /// This function parses the full string and checks for any HTML syntax.
@@ -575,6 +612,7 @@ fn nh3(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add_function(wrap_pyfunction!(clean, m)?)?;
     m.add_function(wrap_pyfunction!(clean_text, m)?)?;
+    m.add_function(wrap_pyfunction!(escape, m)?)?;
     m.add_function(wrap_pyfunction!(is_html, m)?)?;
     m.add_class::<Cleaner>()?;
 
