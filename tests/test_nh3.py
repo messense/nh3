@@ -176,3 +176,25 @@ def test_cleaner_frozenset_args():
 def test_is_html():
     assert not nh3.is_html("plain text")
     assert nh3.is_html("<p>html!</p>")
+
+
+def test_escape():
+    # No-arg: full escape, identical to clean_text
+    assert nh3.escape('Robert"); abuse();//') == "Robert&quot;);&#32;abuse();&#47;&#47;"
+
+    # With tags=: listed tags preserved (no attributes), the rest escaped/stripped
+    assert (
+        nh3.escape(
+            '<span>hello <mention>moto</mention>, welcome!</span>',
+            tags={'mention'},
+        )
+        == 'hello <mention>moto</mention>, welcome!'
+    )
+
+    # Parity with clean_text for a few representative inputs
+    for sample, kwargs in [
+        ('Robert"); abuse();//', {}),
+        ('<b>bold</b> and <i>italic</i>', {"tags": {"b"}}),
+        ("<a href='http://example.com' rel='nofollow'>test</a>", {"tags": {"a"}}),
+    ]:
+        assert nh3.escape(sample, **kwargs) == nh3.clean_text(sample, **kwargs)
