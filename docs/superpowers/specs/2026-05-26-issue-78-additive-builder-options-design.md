@@ -83,12 +83,18 @@ In `src/lib.rs`:
   `builder.clean_content_tags(...)` / `builder.url_schemes(...)` /
   `builder.generic_attribute_prefixes(...)` calls, invoke ammonia's
   `add_*` then `rm_*` when the corresponding `Option` is `Some`.
+- Extend the existing `clean_content_tags` overlap check (introduced by
+  upstream PR #125 to guard against an ammonia panic) so that it computes
+  the *effective* `tags` and `clean_content_tags` sets after applying the
+  `add_*`/`rm_*` modifiers and verifies they are disjoint. Otherwise
+  `add_tags={"p"}` plus `add_clean_content_tags={"p"}` would bypass the
+  guard.
 
 In `nh3.pyi`: add the eight parameters to both `Cleaner.__init__` and
-`clean()`.
+`clean()` (using `AbstractSet` to match the existing stub style).
 
 In `src/lib.rs` docstrings: document each new parameter (RST `:param:`
-entries) and add one or two `pycon` examples.
+entries).
 
 ## Tests
 

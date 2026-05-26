@@ -8,15 +8,23 @@ use pyo3::types::{PyString, PyTuple};
 
 struct Config {
     tags: Option<HashSet<String>>,
+    add_tags: Option<HashSet<String>>,
+    rm_tags: Option<HashSet<String>>,
     clean_content_tags: Option<HashSet<String>>,
+    add_clean_content_tags: Option<HashSet<String>>,
+    rm_clean_content_tags: Option<HashSet<String>>,
     attributes: Option<HashMap<String, HashSet<String>>>,
     attribute_filter: Option<Py<PyAny>>,
     strip_comments: bool,
     link_rel: Option<String>,
     generic_attribute_prefixes: Option<HashSet<String>>,
+    add_generic_attribute_prefixes: Option<HashSet<String>>,
+    rm_generic_attribute_prefixes: Option<HashSet<String>>,
     tag_attribute_values: Option<HashMap<String, HashMap<String, HashSet<String>>>>,
     set_tag_attribute_values: Option<HashMap<String, HashMap<String, String>>>,
     url_schemes: Option<HashSet<String>>,
+    add_url_schemes: Option<HashSet<String>>,
+    rm_url_schemes: Option<HashSet<String>>,
     allowed_classes: Option<HashMap<String, HashSet<String>>>,
     filter_style_properties: Option<HashSet<String>>,
 }
@@ -25,15 +33,23 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             tags: None,
+            add_tags: None,
+            rm_tags: None,
             clean_content_tags: None,
+            add_clean_content_tags: None,
+            rm_clean_content_tags: None,
             attributes: None,
             attribute_filter: None,
             strip_comments: true,
             link_rel: Some("noopener noreferrer".to_string()),
             generic_attribute_prefixes: None,
+            add_generic_attribute_prefixes: None,
+            rm_generic_attribute_prefixes: None,
             tag_attribute_values: None,
             set_tag_attribute_values: None,
             url_schemes: None,
+            add_url_schemes: None,
+            rm_url_schemes: None,
             allowed_classes: None,
             filter_style_properties: None,
         }
@@ -52,10 +68,26 @@ struct Inner {
 ///
 /// :param tags: Sets the tags that are allowed.
 /// :type tags: ``set[str]``, optional
+/// :param add_tags: Adds tags to the allowed set, on top of the defaults or the
+///     value supplied via ``tags``. Useful to extend the default whitelist
+///     without copying it.
+/// :type add_tags: ``set[str]``, optional
+/// :param rm_tags: Removes tags from the allowed set, applied after ``tags``
+///     and ``add_tags``. Useful to forbid a small number of tags while keeping
+///     the rest of the defaults.
+/// :type rm_tags: ``set[str]``, optional
 /// :param clean_content_tags: Sets the tags whose contents will be completely removed from the output.
-///     Must be disjoint from ``tags`` (or the default allowed set when ``tags``
-///     is omitted); a tag cannot be both kept and have its content stripped.
+///     Must be disjoint from the effective ``tags`` set (defaults or the value
+///     supplied via ``tags``, after ``add_tags``/``rm_tags``); a tag cannot be
+///     both kept and have its content stripped.
 /// :type clean_content_tags: ``set[str]``, optional
+/// :param add_clean_content_tags: Adds tags to the clean-content set, on top of
+///     the defaults or the value supplied via ``clean_content_tags``. The same
+///     disjointness rule as ``clean_content_tags`` applies.
+/// :type add_clean_content_tags: ``set[str]``, optional
+/// :param rm_clean_content_tags: Removes tags from the clean-content set,
+///     applied after ``clean_content_tags`` and ``add_clean_content_tags``.
+/// :type rm_clean_content_tags: ``set[str]``, optional
 /// :param attributes: Sets the HTML attributes that are allowed on specific tags,
 ///    ``*`` key means the attributes are allowed on any tag.
 /// :type attributes: ``dict[str, set[str]]``, optional
@@ -75,6 +107,14 @@ struct Inner {
 /// :type link_rel: ``str``
 /// :param generic_attribute_prefixes: Sets the prefix of attributes that are allowed on any tag.
 /// :type generic_attribute_prefixes: ``set[str]``, optional
+/// :param add_generic_attribute_prefixes: Adds prefixes to the
+///     generic-attribute prefix set, on top of the defaults or the value
+///     supplied via ``generic_attribute_prefixes``.
+/// :type add_generic_attribute_prefixes: ``set[str]``, optional
+/// :param rm_generic_attribute_prefixes: Removes prefixes from the
+///     generic-attribute prefix set, applied after
+///     ``generic_attribute_prefixes`` and ``add_generic_attribute_prefixes``.
+/// :type rm_generic_attribute_prefixes: ``set[str]``, optional
 /// :param tag_attribute_values: Sets the values of HTML attributes that are allowed on specific tags.
 ///     The value is structured as a map from tag names to a map from attribute names to a set of attribute values.
 ///     If a tag is not itself whitelisted, adding entries to this map will do nothing.
@@ -91,6 +131,12 @@ struct Inner {
 /// :type set_tag_attribute_values: ``dict[str, dict[str, str]]``, optional
 /// :param url_schemes: Sets the URL schemes permitted on ``href`` and ``src`` attributes.
 /// :type url_schemes: ``set[str]``, optional
+/// :param add_url_schemes: Adds URL schemes to the permitted set, on top of the
+///     defaults or the value supplied via ``url_schemes``.
+/// :type add_url_schemes: ``set[str]``, optional
+/// :param rm_url_schemes: Removes URL schemes from the permitted set, applied
+///     after ``url_schemes`` and ``add_url_schemes``.
+/// :type rm_url_schemes: ``set[str]``, optional
 /// :param allowed_classes: Sets the CSS classes that are allowed on specific tags.
 ///     The values is structured as a map from tag names to a set of class names.
 ///     The `class` attribute itself should not be whitelisted if this parameter is used.
@@ -134,9 +180,21 @@ impl Cleaner {
             let tags: HashSet<&str> = tags.iter().map(|s| s.as_str()).collect();
             builder.tags(tags);
         }
+        if let Some(add_tags) = config.add_tags.as_ref() {
+            builder.add_tags(add_tags.iter().map(|s| s.as_str()));
+        }
+        if let Some(rm_tags) = config.rm_tags.as_ref() {
+            builder.rm_tags(rm_tags.iter().map(|s| s.as_str()));
+        }
         if let Some(tags) = config.clean_content_tags.as_ref() {
             let tags: HashSet<&str> = tags.iter().map(|s| s.as_str()).collect();
             builder.clean_content_tags(tags);
+        }
+        if let Some(add_tags) = config.add_clean_content_tags.as_ref() {
+            builder.add_clean_content_tags(add_tags.iter().map(|s| s.as_str()));
+        }
+        if let Some(rm_tags) = config.rm_clean_content_tags.as_ref() {
+            builder.rm_clean_content_tags(rm_tags.iter().map(|s| s.as_str()));
         }
         if let Some(attrs) = config.attributes.as_ref() {
             let attrs: HashMap<&str, HashSet<&str>> = attrs
@@ -154,6 +212,12 @@ impl Cleaner {
         if let Some(prefixes) = config.generic_attribute_prefixes.as_ref() {
             let prefixes: HashSet<&str> = prefixes.iter().map(|s| s.as_str()).collect();
             builder.generic_attribute_prefixes(prefixes);
+        }
+        if let Some(prefixes) = config.add_generic_attribute_prefixes.as_ref() {
+            builder.add_generic_attribute_prefixes(prefixes.iter().map(|s| s.as_str()));
+        }
+        if let Some(prefixes) = config.rm_generic_attribute_prefixes.as_ref() {
+            builder.rm_generic_attribute_prefixes(prefixes.iter().map(|s| s.as_str()));
         }
         if let Some(values) = config.tag_attribute_values.as_ref() {
             let values: HashMap<&str, HashMap<&str, HashSet<&str>>> = values
@@ -244,6 +308,12 @@ impl Cleaner {
             let url_schemes: HashSet<_> = url_schemes.iter().map(|s| s.as_str()).collect();
             builder.url_schemes(url_schemes);
         }
+        if let Some(url_schemes) = config.add_url_schemes.as_ref() {
+            builder.add_url_schemes(url_schemes.iter().map(|s| s.as_str()));
+        }
+        if let Some(url_schemes) = config.rm_url_schemes.as_ref() {
+            builder.rm_url_schemes(url_schemes.iter().map(|s| s.as_str()));
+        }
         if let Some(allowed_classes) = config.allowed_classes.as_ref() {
             builder.allowed_classes(
                 allowed_classes
@@ -277,30 +347,47 @@ impl Cleaner {
     #[new]
     #[pyo3(signature = (
         tags = None,
+        add_tags = None,
+        rm_tags = None,
         clean_content_tags = None,
+        add_clean_content_tags = None,
+        rm_clean_content_tags = None,
         attributes = None,
         attribute_filter = None,
         strip_comments = true,
         link_rel = "noopener noreferrer",
         generic_attribute_prefixes = None,
+        add_generic_attribute_prefixes = None,
+        rm_generic_attribute_prefixes = None,
         tag_attribute_values = None,
         set_tag_attribute_values = None,
         url_schemes = None,
+        add_url_schemes = None,
+        rm_url_schemes = None,
         allowed_classes = None,
         filter_style_properties = None
     ))]
+    #[allow(clippy::too_many_arguments)]
     fn py_new(
         py: Python,
         tags: Option<HashSet<String>>,
+        add_tags: Option<HashSet<String>>,
+        rm_tags: Option<HashSet<String>>,
         clean_content_tags: Option<HashSet<String>>,
+        add_clean_content_tags: Option<HashSet<String>>,
+        rm_clean_content_tags: Option<HashSet<String>>,
         attributes: Option<HashMap<String, HashSet<String>>>,
         attribute_filter: Option<Py<PyAny>>,
         strip_comments: bool,
         link_rel: Option<&str>,
         generic_attribute_prefixes: Option<HashSet<String>>,
+        add_generic_attribute_prefixes: Option<HashSet<String>>,
+        rm_generic_attribute_prefixes: Option<HashSet<String>>,
         tag_attribute_values: Option<HashMap<String, HashMap<String, HashSet<String>>>>,
         set_tag_attribute_values: Option<HashMap<String, HashMap<String, String>>>,
         url_schemes: Option<HashSet<String>>,
+        add_url_schemes: Option<HashSet<String>>,
+        rm_url_schemes: Option<HashSet<String>>,
         allowed_classes: Option<HashMap<String, HashSet<String>>>,
         filter_style_properties: Option<HashSet<String>>,
     ) -> PyResult<Self> {
@@ -322,22 +409,45 @@ impl Cleaner {
                 }
             }
         }
-        if let Some(ref clean_tags) = clean_content_tags {
-            // A tag listed in both the allowed `tags` set and `clean_content_tags`
-            // makes ammonia panic. Raise an explicit ValueError instead. When the
-            // caller omits `tags`, ammonia falls back to its default allowed set,
-            // so check against that default in order to catch e.g.
-            // `clean_content_tags={"p"}`.
-            let conflict = match tags.as_ref() {
-                Some(allowed) => clean_tags.iter().find(|t| allowed.contains(t.as_str())),
-                None => {
-                    let default_tags = ammonia::Builder::default().clone_tags();
-                    clean_tags
-                        .iter()
-                        .find(|t| default_tags.contains(t.as_str()))
-                }
+        // Compute the effective `tags` and `clean_content_tags` sets after
+        // applying the add_*/rm_* modifiers, then check they are disjoint.
+        // Otherwise ammonia would panic at clean-time. When the caller omits
+        // the replacement option, ammonia falls back to its own defaults.
+        if clean_content_tags.is_some() || add_clean_content_tags.is_some() {
+            let default_builder = ammonia::Builder::default();
+            let effective_allowed: HashSet<String> = {
+                let base: HashSet<String> = match tags.as_ref() {
+                    Some(t) => t.clone(),
+                    None => default_builder
+                        .clone_tags()
+                        .into_iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                };
+                let added = add_tags.as_ref();
+                let removed = rm_tags.as_ref();
+                base.into_iter()
+                    .chain(added.into_iter().flatten().cloned())
+                    .filter(|t| !removed.is_some_and(|r| r.contains(t)))
+                    .collect()
             };
-            if let Some(tag) = conflict {
+            let effective_clean: HashSet<String> = {
+                let base: HashSet<String> = match clean_content_tags.as_ref() {
+                    Some(t) => t.clone(),
+                    None => default_builder
+                        .clone_clean_content_tags()
+                        .into_iter()
+                        .map(|s| s.to_string())
+                        .collect(),
+                };
+                let added = add_clean_content_tags.as_ref();
+                let removed = rm_clean_content_tags.as_ref();
+                base.into_iter()
+                    .chain(added.into_iter().flatten().cloned())
+                    .filter(|t| !removed.is_some_and(|r| r.contains(t)))
+                    .collect()
+            };
+            if let Some(tag) = effective_clean.intersection(&effective_allowed).next() {
                 return Err(PyValueError::new_err(format!(
                     "tag \"{}\" cannot appear in both `tags` and `clean_content_tags`; \
                      either remove it from `clean_content_tags` or pass an explicit \
@@ -348,15 +458,23 @@ impl Cleaner {
         }
         let config = Config {
             tags,
+            add_tags,
+            rm_tags,
             clean_content_tags,
+            add_clean_content_tags,
+            rm_clean_content_tags,
             attributes,
             attribute_filter,
             strip_comments,
             link_rel: link_rel.map(|s| s.to_string()),
             generic_attribute_prefixes,
+            add_generic_attribute_prefixes,
+            rm_generic_attribute_prefixes,
             tag_attribute_values,
             set_tag_attribute_values,
             url_schemes,
+            add_url_schemes,
+            rm_url_schemes,
             allowed_classes,
             filter_style_properties,
         };
@@ -496,15 +614,23 @@ impl Cleaner {
 #[pyfunction(signature = (
     html,
     tags = None,
+    add_tags = None,
+    rm_tags = None,
     clean_content_tags = None,
+    add_clean_content_tags = None,
+    rm_clean_content_tags = None,
     attributes = None,
     attribute_filter = None,
     strip_comments = true,
     link_rel = "noopener noreferrer",
     generic_attribute_prefixes = None,
+    add_generic_attribute_prefixes = None,
+    rm_generic_attribute_prefixes = None,
     tag_attribute_values = None,
     set_tag_attribute_values = None,
     url_schemes = None,
+    add_url_schemes = None,
+    rm_url_schemes = None,
     allowed_classes = None,
     filter_style_properties = None
 ))]
@@ -513,30 +639,46 @@ fn clean(
     py: Python,
     html: &str,
     tags: Option<HashSet<String>>,
+    add_tags: Option<HashSet<String>>,
+    rm_tags: Option<HashSet<String>>,
     clean_content_tags: Option<HashSet<String>>,
+    add_clean_content_tags: Option<HashSet<String>>,
+    rm_clean_content_tags: Option<HashSet<String>>,
     attributes: Option<HashMap<String, HashSet<String>>>,
     attribute_filter: Option<Py<PyAny>>,
     strip_comments: bool,
     link_rel: Option<&str>,
     generic_attribute_prefixes: Option<HashSet<String>>,
+    add_generic_attribute_prefixes: Option<HashSet<String>>,
+    rm_generic_attribute_prefixes: Option<HashSet<String>>,
     tag_attribute_values: Option<HashMap<String, HashMap<String, HashSet<String>>>>,
     set_tag_attribute_values: Option<HashMap<String, HashMap<String, String>>>,
     url_schemes: Option<HashSet<String>>,
+    add_url_schemes: Option<HashSet<String>>,
+    rm_url_schemes: Option<HashSet<String>>,
     allowed_classes: Option<HashMap<String, HashSet<String>>>,
     filter_style_properties: Option<HashSet<String>>,
 ) -> PyResult<String> {
     let cleaner = Cleaner::py_new(
         py,
         tags,
+        add_tags,
+        rm_tags,
         clean_content_tags,
+        add_clean_content_tags,
+        rm_clean_content_tags,
         attributes,
         attribute_filter,
         strip_comments,
         link_rel,
         generic_attribute_prefixes,
+        add_generic_attribute_prefixes,
+        rm_generic_attribute_prefixes,
         tag_attribute_values,
         set_tag_attribute_values,
         url_schemes,
+        add_url_schemes,
+        rm_url_schemes,
         allowed_classes,
         filter_style_properties,
     )?;
