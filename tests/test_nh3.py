@@ -217,6 +217,103 @@ def test_cleaner_frozenset_args():
     assert cleaner.clean("<b><img src='x'>hi</b>") == '<b><img src="x">hi</b>'
 
 
+def test_clean_url_relative_pass_through_is_default():
+    html = '<a href="/foo">x</a>'
+    # Omitting url_relative keeps relative URLs (ammonia default), and the
+    # explicit "pass_through" string must behave identically.
+    assert nh3.clean(html) == '<a href="/foo" rel="noopener noreferrer">x</a>'
+    assert nh3.clean(html, url_relative="pass_through") == nh3.clean(html)
+
+
+def test_clean_url_relative_deny():
+    # Relative URLs are stripped, absolute URLs are kept.
+    assert (
+        nh3.clean('<a href="/foo">x</a>', url_relative="deny")
+        == '<a rel="noopener noreferrer">x</a>'
+    )
+    assert (
+        nh3.clean('<a href="https://example.com/foo">x</a>', url_relative="deny")
+        == '<a href="https://example.com/foo" rel="noopener noreferrer">x</a>'
+    )
+
+
+def test_clean_url_relative_rewrite_with_base():
+    assert (
+        nh3.clean(
+            '<a href="/foo">x</a>',
+            url_relative=("rewrite_with_base", "https://example.com"),
+        )
+        == '<a href="https://example.com/foo" rel="noopener noreferrer">x</a>'
+    )
+
+
+def test_clean_url_relative_rewrite_with_root():
+    out = nh3.clean(
+        '<a href="/CONTRIBUTING.md">x</a>',
+        url_relative=(
+            "rewrite_with_root",
+            "https://github.com/rust-ammonia/ammonia/blob/master/",
+            "README.md",
+        ),
+    )
+    assert (
+        'href="https://github.com/rust-ammonia/ammonia/blob/master/CONTRIBUTING.md"'
+        in out
+    )
+
+
+def test_clean_url_relative_custom_replace():
+    def rewrite(url):
+        return f"https://cdn.example.com{url}" if url.startswith("/") else None
+
+    assert (
+        nh3.clean('<img src="/a.png">', url_relative=rewrite)
+        == '<img src="https://cdn.example.com/a.png">'
+    )
+
+
+def test_clean_url_relative_custom_strip_on_none():
+    assert (
+        nh3.clean('<a href="/x">y</a>', url_relative=lambda _url: None)
+        == '<a rel="noopener noreferrer">y</a>'
+    )
+
+
+def test_clean_url_relative_custom_exception_strips():
+    def boom(_url):
+        raise RuntimeError("nope")
+
+    # A failing callback strips the URL; clean() itself stays infallible. The
+    # callback error is reported via sys.unraisablehook (surfaced by pytest as a
+    # PytestUnraisableExceptionWarning), mirroring attribute_filter's behaviour.
+    assert (
+        nh3.clean('<a href="/x">y</a>', url_relative=boom)
+        == '<a rel="noopener noreferrer">y</a>'
+    )
+
+
+def test_clean_url_relative_invalid():
+    with pytest.raises(ValueError):
+        nh3.clean("x", url_relative="bogus")
+    with pytest.raises(ValueError):
+        nh3.clean("x", url_relative=("bogus_mode", "https://example.com"))
+    with pytest.raises(ValueError):
+        nh3.clean("x", url_relative=("rewrite_with_base", "not a url"))
+    with pytest.raises(ValueError):
+        nh3.clean("x", url_relative=("rewrite_with_base",))
+    with pytest.raises(TypeError):
+        nh3.clean("x", url_relative=123)
+
+
+def test_cleaner_url_relative_reusable():
+    cleaner = nh3.Cleaner(url_relative="deny")
+    assert cleaner.clean('<a href="/foo">x</a>') == '<a rel="noopener noreferrer">x</a>'
+    assert (
+        cleaner.clean('<a href="https://example.com">y</a>')
+        == '<a href="https://example.com" rel="noopener noreferrer">y</a>'
+    )
+
+
 def test_is_html():
     assert not nh3.is_html("plain text")
     assert nh3.is_html("<p>html!</p>")
