@@ -1,9 +1,26 @@
-from typing import AbstractSet, Callable, Dict, Mapping, Optional, Set
+from typing import (
+    AbstractSet,
+    Callable,
+    Dict,
+    Literal,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 
 ALLOWED_TAGS: Set[str]
 ALLOWED_ATTRIBUTES: Dict[str, Set[str]]
 ALLOWED_URL_SCHEMES: Set[str]
 CLEAN_CONTENT_TAGS: Set[str]
+
+UrlRelative = Union[
+    Literal["pass_through", "deny"],
+    Tuple[Literal["rewrite_with_base"], str],
+    Tuple[Literal["rewrite_with_root"], str, str],
+    Callable[[str], Optional[str]],
+]
 
 class Cleaner:
     def __init__(
@@ -20,6 +37,7 @@ class Cleaner:
         url_schemes: Optional[AbstractSet[str]] = None,
         allowed_classes: Optional[Mapping[str, AbstractSet[str]]] = None,
         filter_style_properties: Optional[AbstractSet[str]] = None,
+        url_relative: Optional[UrlRelative] = None,
     ) -> None: ...
     def clean(self, html: str) -> str: ...
 
@@ -37,6 +55,7 @@ def clean(
     url_schemes: Optional[AbstractSet[str]] = None,
     allowed_classes: Optional[Mapping[str, AbstractSet[str]]] = None,
     filter_style_properties: Optional[AbstractSet[str]] = None,
+    url_relative: Optional[UrlRelative] = None,
 ) -> str: ...
 def clean_text(html: str, tags: Optional[AbstractSet[str]] = None) -> str: ...
 def escape(html: str, tags: Optional[AbstractSet[str]] = None) -> str: ...

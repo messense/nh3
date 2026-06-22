@@ -6,6 +6,19 @@ use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyString, PyTuple};
 
+/// Internal representation of the parsed `url_relative` keyword argument.
+///
+/// Parsing and validation happen eagerly when the `Cleaner` is constructed; this
+/// enum is the validated result that gets converted to `ammonia::UrlRelative` in
+/// `build_ammonia_from_config`.
+enum UrlRelativeConfig {
+    PassThrough,
+    Deny,
+    RewriteWithBase(ammonia::Url),
+    RewriteWithRoot { root: ammonia::Url, path: String },
+    Custom(Py<PyAny>),
+}
+
 struct Config {
     tags: Option<HashSet<String>>,
     clean_content_tags: Option<HashSet<String>>,
@@ -19,6 +32,7 @@ struct Config {
     url_schemes: Option<HashSet<String>>,
     allowed_classes: Option<HashMap<String, HashSet<String>>>,
     filter_style_properties: Option<HashSet<String>>,
+    url_relative: Option<UrlRelativeConfig>,
 }
 
 impl Default for Config {
@@ -36,8 +50,83 @@ impl Default for Config {
             url_schemes: None,
             allowed_classes: None,
             filter_style_properties: None,
+            url_relative: None,
         }
     }
+}
+
+/// Parse the Python `url_relative` argument into a validated [`UrlRelativeConfig`].
+///
+/// Accepts the strings ``"pass_through"`` / ``"deny"``, the tuples
+/// ``("rewrite_with_base", base_url)`` / ``("rewrite_with_root", root_url, path)``,
+/// or a callable. Any other value raises ``ValueError`` (bad mode / unparseable
+/// URL / malformed tuple) or ``TypeError`` (unsupported type).
+fn parse_url_relative(obj: &Bound<'_, PyAny>) -> PyResult<UrlRelativeConfig> {
+    if obj.cast::<PyString>().is_ok() {
+        let s: String = obj.extract()?;
+        return match s.as_str() {
+            "pass_through" => Ok(UrlRelativeConfig::PassThrough),
+            "deny" => Ok(UrlRelativeConfig::Deny),
+            other => Err(PyValueError::new_err(format!(
+                "invalid url_relative string {other:?}; expected \"pass_through\" or \"deny\""
+            ))),
+        };
+    }
+    if let Ok(tuple) = obj.cast::<PyTuple>() {
+        let mode: String = tuple
+            .get_item(0)
+            .map_err(|_| PyValueError::new_err("url_relative tuple must not be empty"))?
+            .extract()
+            .map_err(|_| PyValueError::new_err("url_relative tuple mode must be a string"))?;
+        return match mode.as_str() {
+            "rewrite_with_base" => {
+                if tuple.len() != 2 {
+                    return Err(PyValueError::new_err(
+                        "url_relative (\"rewrite_with_base\", base_url) expects exactly 2 elements",
+                    ));
+                }
+                let base: String = tuple.get_item(1)?.extract().map_err(|_| {
+                    PyValueError::new_err(
+                        "url_relative rewrite_with_base base_url must be a string",
+                    )
+                })?;
+                let url = ammonia::Url::parse(&base).map_err(|e| {
+                    PyValueError::new_err(format!("invalid url_relative base URL {base:?}: {e}"))
+                })?;
+                Ok(UrlRelativeConfig::RewriteWithBase(url))
+            }
+            "rewrite_with_root" => {
+                if tuple.len() != 3 {
+                    return Err(PyValueError::new_err(
+                        "url_relative (\"rewrite_with_root\", root_url, path) expects exactly 3 elements",
+                    ));
+                }
+                let root_url: String = tuple.get_item(1)?.extract().map_err(|_| {
+                    PyValueError::new_err(
+                        "url_relative rewrite_with_root root_url must be a string",
+                    )
+                })?;
+                let path: String = tuple.get_item(2)?.extract().map_err(|_| {
+                    PyValueError::new_err("url_relative rewrite_with_root path must be a string")
+                })?;
+                let root = ammonia::Url::parse(&root_url).map_err(|e| {
+                    PyValueError::new_err(format!(
+                        "invalid url_relative root URL {root_url:?}: {e}"
+                    ))
+                })?;
+                Ok(UrlRelativeConfig::RewriteWithRoot { root, path })
+            }
+            other => Err(PyValueError::new_err(format!(
+                "invalid url_relative mode {other:?}; expected \"rewrite_with_base\" or \"rewrite_with_root\""
+            ))),
+        };
+    }
+    if obj.is_callable() {
+        return Ok(UrlRelativeConfig::Custom(obj.clone().unbind()));
+    }
+    Err(PyTypeError::new_err(
+        "url_relative must be a string, a tuple, or a callable",
+    ))
 }
 
 #[self_referencing]
@@ -101,6 +190,19 @@ struct Inner {
 ///     invalid declarations and @rules will be removed, with only syntactically valid
 ///     declarations kept.
 /// :type filter_style_properties: ``set[str]``, optional
+/// :param url_relative: Configures how relative URLs (in ``href`` / ``src`` /
+///     ``<object data=...>``) are handled. Defaults to ``None`` (pass relative
+///     URLs through unchanged). Accepted values:
+///
+///     - ``"pass_through"``: keep relative URLs unchanged (explicit default).
+///     - ``"deny"``: strip relative URLs entirely.
+///     - ``("rewrite_with_base", base_url)``: resolve relative URLs against ``base_url``.
+///     - ``("rewrite_with_root", root_url, path)``: force paths into a directory.
+///     - a callable ``(url) -> str | None``: rewrite relative URLs; return a
+///       string to replace, or ``None`` to strip. A callback that raises (or
+///       returns a non-string, non-``None`` value) strips the URL, and the error
+///       is reported via ``sys.unraisablehook``.
+/// :type url_relative: ``str | tuple | Callable[[str], str | None]``, optional
 ///
 /// Example usage:
 ///
@@ -262,6 +364,60 @@ impl Cleaner {
                     .collect(),
             );
         }
+        if let Some(url_relative) = config.url_relative.as_ref() {
+            let value = match url_relative {
+                UrlRelativeConfig::PassThrough => ammonia::UrlRelative::PassThrough,
+                UrlRelativeConfig::Deny => ammonia::UrlRelative::Deny,
+                UrlRelativeConfig::RewriteWithBase(url) => {
+                    ammonia::UrlRelative::RewriteWithBase(url.clone())
+                }
+                UrlRelativeConfig::RewriteWithRoot { root, path } => {
+                    ammonia::UrlRelative::RewriteWithRoot {
+                        root: root.clone(),
+                        path: path.clone(),
+                    }
+                }
+                UrlRelativeConfig::Custom(callback) => {
+                    let callback = Python::attach(|py| callback.clone_ref(py));
+                    // Help the compiler infer the higher-ranked `Fn` bound that
+                    // `UrlRelative::Custom` requires: the closure only ever returns
+                    // owned/None values, so without this it cannot tie the output
+                    // lifetime to the input `&str`.
+                    fn constrain<F>(f: F) -> F
+                    where
+                        F: for<'a> Fn(&'a str) -> Option<Cow<'a, str>> + Send + Sync + 'static,
+                    {
+                        f
+                    }
+                    let evaluate = constrain(move |url: &str| {
+                        Python::attach(|py| {
+                            let res = callback.call1(py, (url,));
+                            let err = match res {
+                                Ok(val) => {
+                                    if val.is_none(py) {
+                                        return None;
+                                    }
+                                    match val.extract::<String>(py) {
+                                        Ok(s) => return Some(Cow::Owned(s)),
+                                        Err(_) => PyTypeError::new_err(
+                                            "expected url_relative callback to return str or None",
+                                        ),
+                                    }
+                                }
+                                Err(err) => err,
+                            };
+                            // A failing or mistyped callback strips the URL, keeping
+                            // clean() infallible (unlike attribute_filter, which
+                            // preserves the original value on error).
+                            err.write_unraisable(py, None);
+                            None
+                        })
+                    });
+                    ammonia::UrlRelative::Custom(Box::new(evaluate))
+                }
+            };
+            builder.url_relative(value);
+        }
 
         builder
     }
@@ -287,7 +443,8 @@ impl Cleaner {
         set_tag_attribute_values = None,
         url_schemes = None,
         allowed_classes = None,
-        filter_style_properties = None
+        filter_style_properties = None,
+        url_relative = None
     ))]
     fn py_new(
         py: Python,
@@ -303,12 +460,17 @@ impl Cleaner {
         url_schemes: Option<HashSet<String>>,
         allowed_classes: Option<HashMap<String, HashSet<String>>>,
         filter_style_properties: Option<HashSet<String>>,
+        url_relative: Option<Py<PyAny>>,
     ) -> PyResult<Self> {
         if let Some(callback) = attribute_filter.as_ref() {
             if !callback.bind(py).is_callable() {
                 return Err(PyTypeError::new_err("attribute_filter must be callable"));
             }
         }
+        let url_relative = match url_relative {
+            Some(obj) => Some(parse_url_relative(obj.bind(py))?),
+            None => None,
+        };
         if link_rel.is_some() {
             if let Some(ref attrs) = attributes {
                 for (tag, attr_set) in attrs.iter() {
@@ -359,6 +521,7 @@ impl Cleaner {
             url_schemes,
             allowed_classes,
             filter_style_properties,
+            url_relative,
         };
         Ok(Self::new(config))
     }
@@ -492,6 +655,29 @@ impl Cleaner {
 ///    >>> nh3.clean("<a href='https://tag.example' rel='tag'>#tag</a>",
 ///    ...     link_rel=None, attributes=attributes)
 ///    '<a href="https://tag.example" rel="tag">#tag</a>'
+///
+/// ``url_relative`` controls how relative URLs are handled. ``"deny"`` strips
+/// them, while ``("rewrite_with_base", base)`` resolves them against a base URL:
+///
+/// .. code-block:: pycon
+///
+///    >>> nh3.clean('<a href="/foo">x</a>', url_relative="deny")
+///    '<a rel="noopener noreferrer">x</a>'
+///    >>> nh3.clean(
+///    ...     '<a href="/foo">x</a>',
+///    ...     url_relative=("rewrite_with_base", "https://example.com"),
+///    ... )
+///    '<a href="https://example.com/foo" rel="noopener noreferrer">x</a>'
+///
+/// A callable rewrites relative URLs (return ``None`` to strip):
+///
+/// .. code-block:: pycon
+///
+///    >>> nh3.clean(
+///    ...     '<img src="/a.png">',
+///    ...     url_relative=lambda url: f"https://cdn.example.com{url}",
+///    ... )
+///    '<img src="https://cdn.example.com/a.png">'
 
 #[pyfunction(signature = (
     html,
@@ -506,7 +692,8 @@ impl Cleaner {
     set_tag_attribute_values = None,
     url_schemes = None,
     allowed_classes = None,
-    filter_style_properties = None
+    filter_style_properties = None,
+    url_relative = None
 ))]
 #[allow(clippy::too_many_arguments)]
 fn clean(
@@ -524,6 +711,7 @@ fn clean(
     url_schemes: Option<HashSet<String>>,
     allowed_classes: Option<HashMap<String, HashSet<String>>>,
     filter_style_properties: Option<HashSet<String>>,
+    url_relative: Option<Py<PyAny>>,
 ) -> PyResult<String> {
     let cleaner = Cleaner::py_new(
         py,
@@ -539,6 +727,7 @@ fn clean(
         url_schemes,
         allowed_classes,
         filter_style_properties,
+        url_relative,
     )?;
     Ok(py.detach(|| cleaner.clean(html)))
 }
