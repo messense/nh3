@@ -33,6 +33,7 @@ struct Config {
     allowed_classes: Option<HashMap<String, HashSet<String>>>,
     filter_style_properties: Option<HashSet<String>>,
     url_relative: Option<UrlRelativeConfig>,
+    id_prefix: Option<String>,
 }
 
 impl Default for Config {
@@ -51,6 +52,7 @@ impl Default for Config {
             allowed_classes: None,
             filter_style_properties: None,
             url_relative: None,
+            id_prefix: None,
         }
     }
 }
@@ -203,6 +205,11 @@ struct Inner {
 ///       returns a non-string, non-``None`` value) strips the URL, and the error
 ///       is reported via ``sys.unraisablehook``.
 /// :type url_relative: ``str | tuple | Callable[[str], str | None]``, optional
+/// :param id_prefix: Prepends the given string to every allowed ``id`` attribute value,
+///     which helps avoid collisions with ``id``\ s already present on the host page.
+///     The tag and the ``id`` attribute must still be whitelisted (via ``attributes``);
+///     values that already start with the prefix are left unchanged. Defaults to ``None``.
+/// :type id_prefix: ``str``, optional
 ///
 /// Example usage:
 ///
@@ -418,6 +425,9 @@ impl Cleaner {
             };
             builder.url_relative(value);
         }
+        if let Some(id_prefix) = config.id_prefix.as_ref() {
+            builder.id_prefix(Some(id_prefix.as_str()));
+        }
 
         builder
     }
@@ -444,7 +454,8 @@ impl Cleaner {
         url_schemes = None,
         allowed_classes = None,
         filter_style_properties = None,
-        url_relative = None
+        url_relative = None,
+        id_prefix = None
     ))]
     fn py_new(
         py: Python,
@@ -461,6 +472,7 @@ impl Cleaner {
         allowed_classes: Option<HashMap<String, HashSet<String>>>,
         filter_style_properties: Option<HashSet<String>>,
         url_relative: Option<Py<PyAny>>,
+        id_prefix: Option<String>,
     ) -> PyResult<Self> {
         if let Some(callback) = attribute_filter.as_ref() {
             if !callback.bind(py).is_callable() {
@@ -522,6 +534,7 @@ impl Cleaner {
             allowed_classes,
             filter_style_properties,
             url_relative,
+            id_prefix,
         };
         Ok(Self::new(config))
     }
@@ -678,6 +691,18 @@ impl Cleaner {
 ///    ...     url_relative=lambda url: f"https://cdn.example.com{url}",
 ///    ... )
 ///    '<img src="https://cdn.example.com/a.png">'
+///
+/// ``id_prefix`` namespaces ``id`` attributes (which must be whitelisted) so they
+/// cannot collide with ``id``\ s on the surrounding page:
+///
+/// .. code-block:: pycon
+///
+///    >>> nh3.clean(
+///    ...     '<b id="x">hi</b>',
+///    ...     attributes={"b": {"id"}},
+///    ...     id_prefix="user-content-",
+///    ... )
+///    '<b id="user-content-x">hi</b>'
 
 #[pyfunction(signature = (
     html,
@@ -693,7 +718,8 @@ impl Cleaner {
     url_schemes = None,
     allowed_classes = None,
     filter_style_properties = None,
-    url_relative = None
+    url_relative = None,
+    id_prefix = None
 ))]
 #[allow(clippy::too_many_arguments)]
 fn clean(
@@ -712,6 +738,7 @@ fn clean(
     allowed_classes: Option<HashMap<String, HashSet<String>>>,
     filter_style_properties: Option<HashSet<String>>,
     url_relative: Option<Py<PyAny>>,
+    id_prefix: Option<String>,
 ) -> PyResult<String> {
     let cleaner = Cleaner::py_new(
         py,
@@ -728,6 +755,7 @@ fn clean(
         allowed_classes,
         filter_style_properties,
         url_relative,
+        id_prefix,
     )?;
     Ok(py.detach(|| cleaner.clean(html)))
 }
