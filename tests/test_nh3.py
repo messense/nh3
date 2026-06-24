@@ -174,6 +174,65 @@ def test_cleaner_clean_content_tags_overlap():
         nh3.Cleaner(tags={"a"}, clean_content_tags={"a"})
 
 
+def test_clean_tag_attribute_values_conflict():
+    # Whitelisting an attribute in both ``attributes`` and ``tag_attribute_values``
+    # is a footgun: ammonia treats them as alternates, so ``attributes`` lets every
+    # value through and the ``tag_attribute_values`` whitelist is silently ignored.
+    with pytest.raises(ValueError, match="tag_attribute_values"):
+        nh3.clean(
+            "<p style='color: #fff'>text</p>",
+            tags={"p"},
+            attributes={"p": {"style"}},
+            tag_attribute_values={"p": {"style": {"text-align"}}},
+        )
+
+    # The generic ``*`` entry collides in the same way.
+    with pytest.raises(ValueError, match="tag_attribute_values"):
+        nh3.clean(
+            "<p style='color: #fff'>text</p>",
+            tags={"p"},
+            attributes={"*": {"style"}},
+            tag_attribute_values={"p": {"style": {"text-align"}}},
+        )
+
+    # No overlap (the attribute lives only in tag_attribute_values) stays valid.
+    nh3.clean(
+        "<my-tag my-attr='val'>",
+        tags={"my-tag"},
+        tag_attribute_values={"my-tag": {"my-attr": {"val"}}},
+    )
+
+
+def test_cleaner_tag_attribute_values_conflict():
+    with pytest.raises(ValueError, match="tag_attribute_values"):
+        nh3.Cleaner(
+            tags={"p"},
+            attributes={"p": {"style"}},
+            tag_attribute_values={"p": {"style": {"text-align"}}},
+        )
+
+
+def test_tag_attribute_values_filters_non_matching_values():
+    # The correct way to restrict a value: whitelist the tag but leave the attribute
+    # out of ``attributes``. A matching value is kept, anything else is stripped.
+    assert (
+        nh3.clean(
+            "<my-tag my-attr='val'>",
+            tags={"my-tag"},
+            tag_attribute_values={"my-tag": {"my-attr": {"val"}}},
+        )
+        == '<my-tag my-attr="val"></my-tag>'
+    )
+    assert (
+        nh3.clean(
+            "<my-tag my-attr='nope'>",
+            tags={"my-tag"},
+            tag_attribute_values={"my-tag": {"my-attr": {"val"}}},
+        )
+        == "<my-tag></my-tag>"
+    )
+
+
 def test_clean_text():
     res = nh3.clean_text('Robert"); abuse();//')
     assert res == "Robert&quot;);&#32;abuse();&#47;&#47;"
