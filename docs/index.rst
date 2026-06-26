@@ -31,6 +31,30 @@ For example, to only allow ``<b>`` tags:
    >>> nh3.clean("<b><a href='https://example.com'>Hello</a></b>", tags={"b"})
    '<b>Hello</b>'
 
+Adding to (or removing from) the defaults
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``tags``, ``clean_content_tags``, ``url_schemes`` and
+``generic_attribute_prefixes`` options each *replace* the ammonia defaults.
+To extend the defaults without copying them, the ``add_*`` and ``rm_*``
+companion options can be used instead:
+
+.. code-block:: pycon
+
+   >>> # Allow a custom tag in addition to the defaults.
+   >>> nh3.clean("<b><my-tag>x</my-tag></b>", add_tags={"my-tag"})
+   '<b><my-tag>x</my-tag></b>'
+
+   >>> # Forbid <b> but keep the rest of the defaults.
+   >>> nh3.clean("<b><i>x</i></b>", rm_tags={"b"})
+   '<i>x</i>'
+
+The same pattern works for ``add_clean_content_tags`` / ``rm_clean_content_tags``,
+``add_url_schemes`` / ``rm_url_schemes`` and
+``add_generic_attribute_prefixes`` / ``rm_generic_attribute_prefixes``.
+When combined with the replacement option, ``add_*`` and ``rm_*`` apply on
+top of the supplied set.
+
 API reference
 -------------
 

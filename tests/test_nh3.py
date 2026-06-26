@@ -67,6 +67,94 @@ def test_clean():
     )
 
 
+def test_add_tags_extends_defaults():
+    # "my-tag" is not in the defaults, so it would normally be stripped.
+    assert nh3.clean("<my-tag>x</my-tag>") == "x"
+    # add_tags extends the defaults without replacing them, so default tags
+    # like <b> are still preserved.
+    assert (
+        nh3.clean("<b><my-tag>x</my-tag></b>", add_tags={"my-tag"})
+        == "<b><my-tag>x</my-tag></b>"
+    )
+
+
+def test_rm_tags_removes_from_defaults():
+    # <b> is allowed by default.
+    assert nh3.clean("<b>x</b>") == "<b>x</b>"
+    # rm_tags strips it while keeping the rest of the defaults.
+    assert nh3.clean("<b><i>x</i></b>", rm_tags={"b"}) == "<i>x</i>"
+
+
+def test_add_tags_combined_with_explicit_tags():
+    # Explicit `tags=` replaces the defaults; add_tags is applied on top of it.
+    assert (
+        nh3.clean("<b><i>x</i></b><span>y</span>", tags={"b"}, add_tags={"i"})
+        == "<b><i>x</i></b>y"
+    )
+
+
+def test_add_and_rm_clean_content_tags():
+    # add_clean_content_tags wipes the content of an extra tag.
+    assert (
+        nh3.clean("<my-tag>secret</my-tag>", add_clean_content_tags={"my-tag"})
+        == ""
+    )
+    # rm_clean_content_tags lets a default clean-content tag through (its
+    # contents survive even though the tag itself is still stripped).
+    assert "alert" in nh3.clean(
+        "<script>alert('x')</script>", rm_clean_content_tags={"script"}
+    )
+
+
+def test_add_and_rm_url_schemes():
+    # add_url_schemes permits a custom scheme on a link.
+    assert (
+        'href="myapp:foo"'
+        in nh3.clean('<a href="myapp:foo">x</a>', add_url_schemes={"myapp"})
+    )
+    # rm_url_schemes strips a default-allowed scheme.
+    assert "href" not in nh3.clean(
+        '<a href="https://example.com">x</a>', rm_url_schemes={"https"}
+    )
+
+
+def test_add_and_rm_generic_attribute_prefixes():
+    # add_generic_attribute_prefixes allows a custom prefix on any tag.
+    assert 'foo-bar="v"' in nh3.clean(
+        "<p foo-bar='v'>x</p>", add_generic_attribute_prefixes={"foo-"}
+    )
+    # rm_generic_attribute_prefixes removes a prefix that was first added via
+    # generic_attribute_prefixes.
+    assert "data-x" not in nh3.clean(
+        "<p data-x='v'>x</p>",
+        generic_attribute_prefixes={"data-"},
+        rm_generic_attribute_prefixes={"data-"},
+    )
+
+
+def test_add_clean_content_tags_overlap_with_add_tags():
+    # If a tag ends up in both effective sets via add_*, validation must fire.
+    with pytest.raises(ValueError, match="clean_content_tags"):
+        nh3.clean(
+            "<my-tag>x</my-tag>",
+            add_tags={"my-tag"},
+            add_clean_content_tags={"my-tag"},
+        )
+
+
+def test_rm_clean_content_tags_resolves_overlap():
+    # `clean_content_tags={"b"}` would conflict with the default <b> tag, but
+    # rm_tags removes <b> from the allowed set first, so this is valid.
+    assert (
+        nh3.clean(
+            "<b>secret</b>safe",
+            rm_tags={"b"},
+            add_clean_content_tags={"b"},
+        )
+        == "safe"
+    )
+
+
 def test_clean_with_attribute_filter():
     html = "<a href=/><img alt=Home src=foo></a>"
 
