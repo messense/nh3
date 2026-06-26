@@ -314,6 +314,33 @@ def test_cleaner_url_relative_reusable():
     )
 
 
+def test_clean_id_prefix():
+    # id_prefix prepends the given string to every allowed `id` value.
+    assert (
+        nh3.clean("<b id='a'>x</b>", attributes={"b": {"id"}}, id_prefix="safe-")
+        == '<b id="safe-a">x</b>'
+    )
+    # Values already carrying the prefix are left untouched (no double prefix).
+    assert (
+        nh3.clean("<b id='safe-a'>x</b>", attributes={"b": {"id"}}, id_prefix="safe-")
+        == '<b id="safe-a">x</b>'
+    )
+    # The `id` attribute must still be whitelisted; otherwise it is stripped and
+    # the prefix is irrelevant.
+    assert nh3.clean("<b id='a'>x</b>", id_prefix="safe-") == "<b>x</b>"
+    # Omitting id_prefix keeps `id` values unchanged (ammonia default).
+    assert (
+        nh3.clean("<b id='a'>x</b>", attributes={"b": {"id"}})
+        == '<b id="a">x</b>'
+    )
+
+
+def test_cleaner_id_prefix_reusable():
+    cleaner = nh3.Cleaner(attributes={"b": {"id"}}, id_prefix="safe-")
+    assert cleaner.clean("<b id='a'>x</b>") == '<b id="safe-a">x</b>'
+    assert cleaner.clean("<b id='b'>y</b>") == '<b id="safe-b">y</b>'
+
+
 def test_is_html():
     assert not nh3.is_html("plain text")
     assert nh3.is_html("<p>html!</p>")
