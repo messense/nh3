@@ -171,10 +171,10 @@ struct Inner {
 ///     If a tag is not itself whitelisted, adding entries to this map will do nothing.
 ///
 ///     This map is an *alternate* to the entries of ``attributes`` (and ``attributes["*"]``):
-///     if the same attribute is also whitelisted there for the same tag, every value is
-///     accepted and this per-value whitelist is ignored for that attribute. To actually
-///     restrict the allowed values, whitelist the tag but do **not** also list the
-///     attribute in ``attributes``.
+///     if the same attribute were whitelisted there for the same tag, ammonia would accept
+///     every value and ignore this per-value whitelist, so ``Cleaner`` raises ``ValueError``
+///     on that combination. To restrict the allowed values, whitelist the tag but do **not**
+///     also list the attribute in ``attributes``.
 /// :type tag_attribute_values: ``dict[str, dict[str, set[str]]]``, optional
 /// :param set_tag_attribute_values: Sets the values of HTML attributes that are to be set on specific tags.
 ///     The value is structured as a map from tag names to a map from attribute names to an attribute value.
@@ -520,6 +520,32 @@ impl Cleaner {
                 )));
             }
         }
+        if let (Some(values), Some(attrs)) = (tag_attribute_values.as_ref(), attributes.as_ref()) {
+            // `attributes` and `tag_attribute_values` are alternates in ammonia: if an
+            // attribute is whitelisted in `attributes` (under the tag or the generic
+            // "*" key) it is accepted with *any* value, so a per-value whitelist in
+            // `tag_attribute_values` for that same attribute is silently ignored. That
+            // is almost always a mistake -- the caller thinks they restricted the value
+            // but did not -- so reject it instead of quietly allowing everything.
+            let generic = attrs.get("*");
+            for (tag, tag_values) in values {
+                let tag_attrs = attrs.get(tag);
+                for attr in tag_values.keys() {
+                    let whitelisted = tag_attrs.is_some_and(|s| s.contains(attr))
+                        || generic.is_some_and(|s| s.contains(attr));
+                    if whitelisted {
+                        return Err(PyValueError::new_err(format!(
+                            "attribute \"{attr}\" on tag \"{tag}\" is whitelisted in both \
+                             `attributes` and `tag_attribute_values`, which are alternates; \
+                             `attributes` already permits every value, so the \
+                             `tag_attribute_values` whitelist would be silently ignored. \
+                             Drop \"{attr}\" from `attributes` (the \"{tag}\" entry or \"*\") \
+                             to restrict it by value"
+                        )));
+                    }
+                }
+            }
+        }
         let config = Config {
             tags,
             clean_content_tags,
@@ -595,10 +621,10 @@ impl Cleaner {
 ///
 /// ``tag_attribute_values`` restricts an attribute to a set of allowed values
 /// (values outside the set cause the attribute to be stripped), while
-/// ``set_tag_attribute_values`` unconditionally adds attributes. Note that
-/// ``tag_attribute_values`` is an *alternate* to ``attributes`` — if the same
-/// attribute is also whitelisted in ``attributes`` for that tag, every value
-/// is allowed and the per-value whitelist is ignored:
+/// ``set_tag_attribute_values`` unconditionally adds attributes. Because
+/// ``tag_attribute_values`` is an *alternate* to ``attributes``, the attribute
+/// must be left out of ``attributes`` for the restriction to apply — listing it
+/// in both raises ``ValueError``:
 ///
 /// .. code-block:: pycon
 ///
