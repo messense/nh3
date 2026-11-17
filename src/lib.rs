@@ -152,7 +152,10 @@ struct Inner {
 /// :type attributes: ``dict[str, set[str]]``, optional
 /// :param attribute_filter: Allows rewriting of all attributes using a callback.
 ///     The callback takes name of the element, attribute and its value.
-///     Returns ``None`` to remove the attribute, or a value to use.
+///     Returns ``None`` to remove the attribute, or a string to use.
+///     A callback that raises (or returns a non-string, non-``None`` value)
+///     strips the attribute, and the error is reported via ``sys.unraisablehook``
+///     rather than raised to the caller.
 /// :type attribute_filter: ``Callable[[str, str, str], str | None]``, optional
 /// :param strip_comments: Configures the handling of HTML comments, defaults to ``True``.
 /// :type strip_comments: ``bool``
@@ -343,7 +346,8 @@ impl Cleaner {
                             .unwrap(),
                         ),
                     );
-                    Some(value.into())
+                    // Remove the attribute when its custom policy cannot be evaluated.
+                    None
                 })
             });
         }
@@ -414,8 +418,7 @@ impl Cleaner {
                                 Err(err) => err,
                             };
                             // A failing or mistyped callback strips the URL, keeping
-                            // clean() infallible (unlike attribute_filter, which
-                            // preserves the original value on error).
+                            // clean() infallible, just like attribute_filter.
                             err.write_unraisable(py, None);
                             None
                         })
