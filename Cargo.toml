@@ -15,5 +15,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 ammonia = "4.1.4"
-pyo3 = { version = "0.29.0", features = ["abi3-py38"] }
+pyo3 = { version = "0.30", features = ["abi3-py39"] }
 ouroboros = "0.18"
