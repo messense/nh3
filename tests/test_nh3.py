@@ -1,3 +1,6 @@
+import sys
+from urllib.parse import urlsplit
+
 import nh3
 import pytest
 
@@ -83,9 +86,81 @@ def test_clean_with_attribute_filter():
     with pytest.raises(TypeError):
         nh3.clean(html, attribute_filter="not a callable")
 
-    # attribute_filter may raise exception, but it's an infallible API
-    # which writes a unraisable exception
-    nh3.clean(html, attribute_filter=lambda _element, _attribute, _value: True)
+
+@pytest.mark.parametrize("api", [nh3.clean, nh3.Cleaner])
+def test_attribute_filter_exception_strips(api, monkeypatch):
+    errors = []
+    monkeypatch.setattr(
+        sys,
+        "unraisablehook",
+        lambda error: errors.append((error.exc_type, error.object)),
+    )
+    allowed_hosts = {"cdn.example.com": "/public/"}
+
+    def attribute_filter(tag, attr, value):
+        if tag == "img" and attr == "src":
+            url = urlsplit(value)
+            prefix = allowed_hosts[url.hostname]
+            return value if url.path.startswith(prefix) else None
+        return value
+
+    options = dict(
+        tags={"img"},
+        attributes={"img": {"src", "alt"}},
+        attribute_filter=attribute_filter,
+    )
+    if api is nh3.Cleaner:
+        clean = api(**options).clean
+    else:
+        def clean(html):
+            return api(html, **options)
+    html = (
+        '<img src="https://attacker.example/track.png" alt="untrusted">'
+        '<img src="https://cdn.example.com/public/cat.png" alt="allowed">'
+        '<img src="https://cdn.example.com/private/cat.png" alt="denied">'
+    )
+    assert clean(html) == (
+        '<img alt="untrusted">'
+        '<img src="https://cdn.example.com/public/cat.png" alt="allowed">'
+        '<img alt="denied">'
+    )
+    assert errors == [
+        (KeyError, ("img", "src", "https://attacker.example/track.png")),
+    ]
+
+
+@pytest.mark.parametrize("api", [nh3.clean, nh3.Cleaner])
+@pytest.mark.parametrize("invalid_return", [True, 42, b"bytes"])
+def test_attribute_filter_invalid_return_strips(api, invalid_return, monkeypatch):
+    errors = []
+    monkeypatch.setattr(
+        sys,
+        "unraisablehook",
+        lambda error: errors.append((error.exc_type, str(error.exc_value), error.object)),
+    )
+
+    def attribute_filter(tag, attr, value):
+        return invalid_return if attr == "title" else value
+
+    options = dict(
+        attributes={"div": {"title", "id"}},
+        attribute_filter=attribute_filter,
+    )
+    if api is nh3.Cleaner:
+        clean = api(**options).clean
+    else:
+        def clean(html):
+            return api(html, **options)
+    assert clean('<div title="untrusted" id="keep">text</div>') == (
+        '<div id="keep">text</div>'
+    )
+    assert errors == [
+        (
+            TypeError,
+            "expected attribute_filter to return str or None",
+            ("div", "title", "untrusted"),
+        ),
+    ]
 
 
 def test_clean_rel_attribute_conflict():

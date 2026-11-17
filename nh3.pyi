@@ -39,7 +39,14 @@ class Cleaner:
         filter_style_properties: Optional[AbstractSet[str]] = None,
         url_relative: Optional[UrlRelative] = None,
         id_prefix: Optional[str] = None,
-    ) -> None: ...
+    ) -> None:
+        """Create a reusable sanitizer.
+
+        If attribute_filter raises or returns a value other than str or None,
+        the attribute is removed. Errors are reported via sys.unraisablehook
+        rather than raised to the caller.
+        """
+        ...
     def clean(self, html: str) -> str: ...
 
 def clean(
@@ -58,7 +65,14 @@ def clean(
     filter_style_properties: Optional[AbstractSet[str]] = None,
     url_relative: Optional[UrlRelative] = None,
     id_prefix: Optional[str] = None,
-) -> str: ...
+) -> str:
+    """Sanitize an HTML fragment.
+
+    If attribute_filter raises or returns a value other than str or None,
+    the attribute is removed. Errors are reported via sys.unraisablehook
+    rather than raised to the caller.
+    """
+    ...
 def clean_text(html: str, tags: Optional[AbstractSet[str]] = None) -> str: ...
 def escape(html: str, tags: Optional[AbstractSet[str]] = None) -> str: ...
 def is_html(html: str) -> bool: ...

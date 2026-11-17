@@ -31,6 +31,11 @@ For example, to only allow ``<b>`` tags:
    >>> nh3.clean("<b><a href='https://example.com'>Hello</a></b>", tags={"b"})
    '<b>Hello</b>'
 
+If an ``attribute_filter`` callback raises an exception or returns a value other
+than ``str`` or ``None``, both ``clean()`` and ``Cleaner.clean()`` remove the
+attribute. The error is reported via ``sys.unraisablehook`` rather than raised
+to the caller.
+
 API reference
 -------------
 
